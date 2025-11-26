@@ -1,0 +1,935 @@
+<script setup lang="ts">
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  nextTick,
+} from "vue"
+import type { PlayerState, PlayMode, Scene } from "../types"
+import { API_BASE } from "../config"
+import { connectWs, onStateChange, sendMessage } from "../ws"
+import SceneMedia from "../components/SceneMedia.vue"
+
+const state = ref<PlayerState | null>(null)
+const initLoaded = ref(false)
+let unsubscribe: (() => void) | null = null
+
+// Dauer in ms (0–10000) – Slider steuert ms, Anzeige in Sekunden
+const localDurationMs = ref(5000)
+const durationSeconds = computed(() => Math.round(localDurationMs.value / 1000))
+const localMode = ref<PlayMode>("sequential")
+
+const scenes = ref<Scene[]>([])
+const scenesLoading = ref(false)
+const scenesError = ref<string | null>(null)
+
+const uploading = ref(false)
+const uploadError = ref<string | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const previewScene = ref<Scene | null>(null)
+const showPreview = (scene: Scene) => {
+  previewScene.value = scene
+}
+const closePreview = () => {
+  previewScene.value = null
+}
+
+// Tabs: preview / scenes
+const activeTab = ref<"preview" | "scenes">("preview")
+const setTab = (tab: "preview" | "scenes") => {
+  activeTab.value = tab
+}
+
+const currentScene = computed<Scene | null>(() => {
+  if (!state.value) {
+    return null
+  }
+  return scenes.value.find((s) => s.id === state.value!.currentSceneId) ?? null
+})
+
+const visibleScenes = computed(() =>
+  scenes.value.filter((scene) => scene.visible ?? true),
+)
+const visibleCount = computed(() => visibleScenes.value.length)
+
+// --- TIMER für Auto-Wechsel ---
+const timerId = ref<number | null>(null)
+
+function clearTimer() {
+  if (timerId.value !== null) {
+    clearTimeout(timerId.value)
+    timerId.value = null
+  }
+}
+
+// Hilfsfunktion: nächste Szene nach Modus (sequentiell / random) bestimmen
+function computeNextScene(): Scene | null {
+  const s = state.value
+  const list = visibleScenes.value
+  if (!s || list.length === 0) {
+    return null
+  }
+
+  const mode = s.mode
+  const currentId = s.currentSceneId
+  const currentIndex = list.findIndex((sc) => sc.id === currentId)
+
+  if (mode === "random") {
+    if (list.length === 1) {
+      return list[0]
+    }
+    let idx = currentIndex
+    // stelle sicher, dass wir nicht immer die gleiche Szene erwischen
+    while (idx === currentIndex || idx === -1) {
+      idx = Math.floor(Math.random() * list.length)
+    }
+    return list[idx]
+  }
+
+  // sequential (default)
+  if (currentIndex === -1) {
+    return list[0]
+  }
+  const nextIndex = (currentIndex + 1) % list.length
+  return list[nextIndex]
+}
+
+function scheduleNextByTimer() {
+  clearTimer()
+
+  const s = state.value
+  const scene = currentScene.value
+
+  if (!s || !scene) {
+    return
+  }
+
+  // nur wenn Player wirklich spielt
+  if (!s.isPlaying) {
+    return
+  }
+
+  // Wenn Video + volle Länge → kein Timer, Wechsel über @requestNext (SceneMedia)
+  if (scene.type === "video" && s.playVideosFullLength) {
+    return
+  }
+
+  const baseMs = s.transitionMs ?? localDurationMs.value ?? 5000
+  const ms = Math.min(10000, Math.max(500, baseMs))
+
+  timerId.value = window.setTimeout(() => {
+    nextScene()
+  }, ms)
+}
+
+// Pagination für Thumbnails
+const thumbPageSize = 6
+const currentThumbPage = ref(0)
+const totalThumbPages = computed(() => {
+  const total = scenes.value.length
+  if (total === 0) {
+    return 1
+  }
+  return Math.ceil(total / thumbPageSize)
+})
+
+// Ref auf den sichtbaren Bereich, um die Breite zu messen
+const thumbOuter = ref<HTMLElement | null>(null)
+const slotWidth = ref(0)
+
+function updateSlotWidth() {
+  if (thumbOuter.value) {
+    slotWidth.value = thumbOuter.value.clientWidth
+  }
+}
+
+// Live-Swipe-State
+const dragging = ref(false)
+const dragStartX = ref(0)
+const dragOffsetX = ref(0)
+const dragThreshold = 80
+
+// Transition-Flag (während Drag keine CSS-Transition)
+const disableTransition = ref(false)
+
+// Seiten als Array von Scene-Arrays
+const pages = computed(() => {
+  const res: Scene[][] = []
+  const total = scenes.value.length
+  if (total === 0) {
+    return res
+  }
+  for (let i = 0; i < totalThumbPages.value; i++) {
+    const start = i * thumbPageSize
+    res.push(scenes.value.slice(start, start + thumbPageSize))
+  }
+  return res
+})
+
+// Stil für den gesamten Track (alle Seiten nebeneinander)
+const trackStyle = computed(() => {
+  const width = slotWidth.value || 0
+  const baseOffset = -currentThumbPage.value * width
+  const totalOffset = baseOffset + dragOffsetX.value
+
+  return {
+    transform: `translateX(${totalOffset}px)`,
+    transition: disableTransition.value
+      ? "none"
+      : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+  }
+})
+
+watch(scenes, () => {
+  const maxPage = Math.max(0, totalThumbPages.value - 1)
+  if (currentThumbPage.value > maxPage) {
+    currentThumbPage.value = maxPage
+  }
+})
+
+watch(activeTab, (val) => {
+  if (val === "scenes") {
+    nextTick(() => {
+      updateSlotWidth()
+    })
+  }
+})
+
+// --- Pagination / Swipe-Logik ---
+function goToPrevThumbPage() {
+  if (currentThumbPage.value > 0) {
+    currentThumbPage.value -= 1
+  }
+}
+
+function goToNextThumbPage() {
+  if (currentThumbPage.value < totalThumbPages.value - 1) {
+    currentThumbPage.value += 1
+  }
+}
+
+function onThumbTouchStart(e: TouchEvent) {
+  if (!e.touches || e.touches.length === 0) {
+    return
+  }
+
+  dragging.value = true
+  dragStartX.value = e.touches[0].clientX
+  dragOffsetX.value = 0
+
+  // Während des aktiven Drags keine CSS-Transition,
+  // damit die Bewegung 1:1 dem Finger folgt.
+  disableTransition.value = true
+}
+
+function onThumbTouchMove(e: TouchEvent) {
+  if (!dragging.value || !e.touches || e.touches.length === 0) {
+    return
+  }
+
+  const currentX = e.touches[0].clientX
+  dragOffsetX.value = currentX - dragStartX.value
+}
+
+function onThumbTouchEnd() {
+  if (!dragging.value) {
+    return
+  }
+
+  const delta = dragOffsetX.value
+  const canGoPrev = currentThumbPage.value > 0
+  const canGoNext = currentThumbPage.value < totalThumbPages.value - 1
+
+  let direction: "prev" | "next" | "none" = "none"
+
+  if (delta > dragThreshold && canGoPrev) {
+    direction = "prev"
+  } else if (delta < -dragThreshold && canGoNext) {
+    direction = "next"
+  }
+
+  dragging.value = false
+
+  if (direction === "none") {
+    // Zu kleiner Swipe → sanft zurück zur Mitte
+    disableTransition.value = false
+    dragOffsetX.value = 0
+    return
+  }
+
+  // Gültiger Swipe: Seite umschalten
+  if (direction === "next" && canGoNext) {
+    currentThumbPage.value += 1
+  } else if (direction === "prev" && canGoPrev) {
+    currentThumbPage.value -= 1
+  }
+
+  // Direkt auf die neue Seite springen, ohne zweite Animation
+  disableTransition.value = true
+  dragOffsetX.value = 0
+
+  nextTick(() => {
+    disableTransition.value = false
+  })
+}
+
+const playVideosFullLength = computed<boolean>({
+  get() {
+    return !!state.value?.playVideosFullLength
+  },
+  set(val: boolean) {
+    sendMessage({ type: "SET_STATE", payload: { playVideosFullLength: val } })
+  },
+})
+
+watch(
+  () => state.value,
+  (s, prev) => {
+    if (!s) {
+      return
+    }
+
+    const nextTransition = Math.min(
+      10000,
+      Math.max(0, s.transitionMs ?? 5000),
+    )
+
+    // Initial Sync beim ersten State vom Backend
+    if (!initLoaded.value) {
+      localMode.value = s.mode
+      localDurationMs.value = nextTransition
+      initLoaded.value = true
+      // direkt beim ersten State einen Timer setzen
+      scheduleNextByTimer()
+      return
+    }
+
+    // Falls sich Werte im Backend später ändern (z.B. anderer Client),
+    // folgen die lokalen Controls automatisch.
+    if (s.transitionMs !== prev?.transitionMs) {
+      localDurationMs.value = nextTransition
+    }
+
+    if (s.mode !== prev?.mode) {
+      localMode.value = s.mode
+    }
+
+    const relevantChanged =
+      !prev ||
+      prev.currentSceneId !== s.currentSceneId ||
+      prev.transitionMs !== s.transitionMs ||
+      prev.isPlaying !== s.isPlaying ||
+      prev.playVideosFullLength !== s.playVideosFullLength
+
+    if (relevantChanged) {
+      scheduleNextByTimer()
+    }
+  },
+)
+
+onMounted(() => {
+  connectWs()
+  unsubscribe = onStateChange((s) => {
+    state.value = { ...s }
+  })
+  loadScenes()
+  nextTick(() => {
+    updateSlotWidth()
+    window.addEventListener("resize", updateSlotWidth)
+  })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateSlotWidth)
+  clearTimer()
+  if (unsubscribe) {
+    unsubscribe()
+  }
+})
+
+async function loadScenes() {
+  scenesLoading.value = true
+  scenesError.value = null
+  try {
+    const res = await fetch(`${API_BASE}/api/scenes`)
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+    scenes.value = (await res.json()) as Scene[]
+  } catch (e) {
+    console.error(e)
+    scenesError.value = "Konnte Szenen nicht laden."
+  } finally {
+    scenesLoading.value = false
+  }
+}
+
+function togglePlay() {
+  if (!state.value) {
+    return
+  }
+  sendMessage({
+    type: "SET_STATE",
+    payload: { isPlaying: !state.value.isPlaying },
+  })
+}
+
+// Manuelles "Weiter" – jetzt über computeNextScene (Modus wird beachtet)
+function nextScene() {
+  if (!state.value) {
+    return
+  }
+  const next = computeNextScene()
+  if (!next) {
+    return
+  }
+  sendMessage({
+    type: "SET_SCENE",
+    payload: { sceneId: next.id },
+  })
+}
+
+// Manuelles "Zurück" – weiterhin lokal (ist ok)
+function prevScene() {
+  if (!state.value || !visibleScenes.value.length) {
+    return
+  }
+  const idx = visibleScenes.value.findIndex(
+    (s) => s.id === state.value!.currentSceneId,
+  )
+  const prevIndex = idx <= 0 ? visibleScenes.value.length - 1 : idx - 1
+  sendMessage({
+    type: "SET_SCENE",
+    payload: { sceneId: visibleScenes.value[prevIndex].id },
+  })
+}
+
+function applyDuration() {
+  const ms = Math.min(10000, Math.max(0, localDurationMs.value))
+  localDurationMs.value = ms
+
+  sendMessage({
+    type: "SET_STATE",
+    payload: { transitionMs: ms },
+  })
+}
+
+function setMode(mode: PlayMode) {
+  if (localMode.value === mode) {
+    return
+  }
+  localMode.value = mode
+  sendMessage({
+    type: "SET_STATE",
+    payload: { mode },
+  })
+}
+
+function openFileDialog() {
+  if (fileInput.value) {
+    fileInput.value.click()
+  }
+}
+
+async function handleFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files || !input.files.length) {
+    return
+  }
+  await uploadFiles(input.files)
+  input.value = ""
+}
+
+async function uploadFiles(files: FileList) {
+  uploading.value = true
+  uploadError.value = null
+  try {
+    const form = new FormData()
+    Array.from(files).forEach((f) => form.append("files", f))
+    const res = await fetch(`${API_BASE}/api/scenes/upload`, {
+      method: "POST",
+      body: form,
+    })
+    if (!res.ok) {
+      throw new Error(`Upload fehlgeschlagen (HTTP ${res.status})`)
+    }
+    const created = (await res.json()) as Scene[]
+    scenes.value.push(...created)
+  } catch (e: any) {
+    console.error(e)
+    uploadError.value = e?.message ?? "Upload fehlgeschlagen."
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function toggleSceneActive(scene: Scene) {
+  const oldVisible = scene.visible ?? true
+  const newVisible = !oldVisible
+  scene.visible = newVisible
+  try {
+    const res = await fetch(`${API_BASE}/api/scenes/${scene.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visible: newVisible }),
+    })
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+    const updated = (await res.json()) as Scene
+    const idx = scenes.value.findIndex((s) => s.id === scene.id)
+    if (idx !== -1) {
+      scenes.value[idx] = { ...scenes.value[idx], ...updated }
+    }
+  } catch (e: any) {
+    console.error(e)
+    scenesError.value =
+      e?.message ?? "Sichtbarkeit konnte nicht geändert werden."
+    scene.visible = oldVisible
+  }
+}
+
+async function deleteVisibleScenes() {
+  const ids = visibleScenes.value.map((scene) => scene.id)
+  if (!ids.length) {
+    return
+  }
+  if (!confirm(`Diese ${ids.length} Datei(en) löschen?`)) {
+    return
+  }
+  try {
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`${API_BASE}/api/scenes/${id}`, { method: "DELETE" }),
+      ),
+    )
+    scenes.value = scenes.value.filter((s) => !ids.includes(s.id))
+  } catch (e) {
+    console.error(e)
+    scenesError.value = "Löschen fehlgeschlagen."
+  }
+}
+</script>
+
+<template>
+  <div
+    class="min-h-[100dvh] md:min-h-screen relative overflow-x-hidden text-slate-900 px-4 py-4 md:py-6"
+  >
+    <!-- Hintergrund hell, ohne Farbverlauf -->
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-white" />
+
+    <!-- Inhalt -->
+    <div class="w-full max-w-md mx-auto space-y-4">
+      <!-- TAB HEADERS -->
+      <div
+        class="grid grid-cols-2 bg-white/40 backdrop-blur-xl p-1 rounded-2xl shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
+      >
+        <button
+          class="py-2 rounded-xl text-sm font-semibold transition"
+          :class="
+            activeTab === 'preview'
+              ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
+              : 'text-slate-600'
+          "
+          @click="setTab('preview')"
+        >
+          Preview
+        </button>
+
+        <button
+          class="py-2 rounded-xl text-sm font-semibold transition"
+          :class="
+            activeTab === 'scenes'
+              ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
+              : 'text-slate-600'
+          "
+          @click="setTab('scenes')"
+        >
+          Szenen
+        </button>
+      </div>
+
+      <!-- TAB 1 – PREVIEW -->
+      <div v-if="activeTab === 'preview'" class="space-y-5">
+        <div class="relative w-full">
+          <div
+            class="w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] border-0"
+          >
+            <!-- HEADER OVERLAY -->
+            <div
+              class="absolute z-10 inset-x-3 top-3 flex justify-between gap-2"
+            >
+              <div
+                class="flex flex-col rounded-[30px] bg-white/60 border border-slate-300/80 backdrop-blur-md px-3 py-2 shadow-[0_14px_30px_rgba(15,23,42,0.30)]"
+              >
+                <span
+                  class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-800"
+                >
+                  Live Preview
+                </span>
+                <span class="text-[10px] text-slate-800 mt-0.5">
+                  {{ visibleCount }} aktive Szene(n)
+                </span>
+              </div>
+
+              <span
+                class="self-start max-w-[55%] truncate rounded-full bg-white/60 border border-slate-300/80 px-3 py-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] backdrop-blur-md"
+              >
+                {{
+                  currentScene
+                    ? currentScene.title || `Scene ${currentScene.id}`
+                    : "Keine Szene ausgewählt"
+                }}
+              </span>
+            </div>
+
+            <!-- MEDIA -->
+            <SceneMedia
+              :scene="currentScene"
+              mode="control-preview"
+              :play-videos-full-length="!!state?.playVideosFullLength"
+              @requestNext="nextScene"
+            />
+          </div>
+          <div class="mt-4 flex items-center justify-center gap-3">
+            <button
+              @click.stop="prevScene"
+              class="w-11 h-11 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/80 flex items-center justify-center text-lg text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.55)] active:scale-95 transition"
+              aria-label="Vorherige Szene"
+            >
+              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                <!-- Left pointing skip icon: triangle + subtle bar on the left -->
+                <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
+                <path d="M17 5L9 12l8 7z" fill="currentColor" />
+              </svg>
+            </button>
+
+            <button
+              @click.stop="togglePlay"
+              class="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-xl border border-white flex items-center justify-center text-xl text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.7)] active:scale-95 transition"
+              aria-label="Play/Pause"
+            >
+              <template v-if="state?.isPlaying">
+                <!-- Pause icon: two vertical bars -->
+                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                  <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
+                </svg>
+              </template>
+              <template v-else>
+                <!-- Play icon -->
+                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                  <path d="M8 5l11 7-11 7z" fill="currentColor" />
+                </svg>
+              </template>
+            </button>
+
+            <button
+              @click.stop="nextScene"
+              class="w-11 h-11 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/80 flex items-center justify-center text-lg text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.55)] active:scale-95 transition"
+              aria-label="Nächste Szene"
+            >
+              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="pt-6 space-y-5">
+          <div class="glass-panel-soft w-full rounded-[22px] px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <span
+                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+              >
+                Modus
+              </span>
+
+              <div
+                class="flex rounded-full bg-white/80 border border-slate-200/60 p-1 text-[11px]"
+              >
+                <button
+                  type="button"
+                  class="px-2.5 py-1 rounded-full transition"
+                  :class="
+                    localMode === 'sequential'
+                      ? 'bg-slate-900 text-white shadow-[0_8px_22px_rgba(15,23,42,0.45)]'
+                      : 'text-slate-600'
+                  "
+                  @click="setMode('sequential')"
+                >
+                  Sequenziell
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-1 rounded-full transition"
+                  :class="
+                    localMode === 'random'
+                      ? 'bg-slate-900 text-white shadow-[0_8px_22px_rgba(15,23,42,0.45)]'
+                      : 'text-slate-600'
+                  "
+                  @click="setMode('random')"
+                >
+                  Zufällig
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <div class="flex items-center justify-between mb-1">
+                <span
+                  class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+                >
+                  Dauer
+                </span>
+                <span class="text-[11px] text-slate-700">
+                  {{ durationSeconds }} s
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="10000"
+                step="10"
+                v-model.number="localDurationMs"
+                @change="applyDuration"
+                class="w-full duration-slider"
+                :style="{
+                  '--duration-progress': `${(localDurationMs / 100).toFixed(0)}%`,
+                }"
+              />
+            </div>
+
+            <div class="mt-5 flex items-center justify-between gap-3">
+              <span
+                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+              >
+                Videos in voller Länge
+              </span>
+
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="playVideosFullLength"
+                  class="sr-only peer"
+                />
+                <div
+                  class="w-11 h-6 bg-slate-200 peer-checked:bg-sky-400 rounded-full transition-colors"
+                ></div>
+                <div
+                  class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-[0_4px_10px_rgba(15,23,42,0.35)] peer-checked:translate-x-5 transition-transform"
+                ></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2 – SZENEN -->
+      <div
+        v-if="activeTab === 'scenes'"
+        class="space-y-4 pb-2 flex flex-col h-[calc(100vh-140px)]"
+      >
+        <!-- Header -->
+        <div class="flex items-baseline justify-between">
+          <span class="text-[11px] uppercase tracking-[0.22em] text-slate-700">
+            Szenen
+          </span>
+          <span class="text-[11px] text-slate-700">
+            {{ visibleCount }} sichtbar von {{ scenes.length }}
+          </span>
+        </div>
+
+        <!-- Scroll Container (fixe Höhe, keine vertikale Scrollbar) -->
+        <div class="flex-1 min-h-0 overflow-y-hidden px-1 pt-1 pb-1">
+          <div
+            ref="thumbOuter"
+            class="relative group overflow-hidden thumb-swipe-area"
+            @touchstart.stop="onThumbTouchStart"
+            @touchmove.prevent.stop="onThumbTouchMove"
+            @touchend.stop="onThumbTouchEnd"
+          >
+            <!-- Prev button (Desktop only) -->
+            <button
+              type="button"
+              class="hidden md:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/85 border border-white/80 shadow text-slate-700 text-lg opacity-0 group-hover:opacity-100 transition disabled:opacity-30 disabled:cursor-default"
+              @click.stop="goToPrevThumbPage"
+              :disabled="currentThumbPage === 0"
+            >
+              ‹
+            </button>
+
+            <!-- Alle Seiten nebeneinander, wir blenden per translateX die aktuelle ein -->
+            <div class="flex" :style="trackStyle">
+              <div
+                v-for="(pageScenes, pageIndex) in pages"
+                :key="pageIndex"
+                class="w-full flex-shrink-0"
+              >
+                <div class="grid grid-cols-2 gap-3 pr-1 pb-1">
+                  <div
+                    v-for="scene in pageScenes"
+                    :key="scene.id"
+                    @click="toggleSceneActive(scene)"
+                    :class="[
+                      'relative rounded-[24px] cursor-pointer bg-white shadow transition',
+                      scene.visible === false ? 'opacity-35 grayscale' : 'opacity-100'
+                    ]"
+                  >
+                    <!-- innerer Wrapper: Bild + blauer Rahmen -->
+                    <div
+                      :class="[
+                        'overflow-hidden rounded-[22px] border-[3px] border-transparent bg-white',
+                        scene.id === state?.currentSceneId ? 'border-sky-400' : ''
+                      ]"
+                    >
+                      <div class="w-full h-[170px] sm:h-[185px]">
+                        <template v-if="scene.thumbnailUrl">
+                          <img
+                            :src="API_BASE + scene.thumbnailUrl"
+                            loading="lazy"
+                            decoding="async"
+                            class="w-full h-full object-cover"
+                          />
+                        </template>
+                        <template v-else-if="scene.type === 'image'">
+                          <img
+                            :src="API_BASE + scene.url"
+                            loading="lazy"
+                            decoding="async"
+                            class="w-full h-full object-cover"
+                          />
+                        </template>
+                        <template v-else>
+                          <video
+                            :src="API_BASE + scene.url"
+                            class="w-full h-full object-cover"
+                            muted
+                            playsinline
+                            preload="metadata"
+                          ></video>
+                        </template>
+                      </div>
+                    </div>
+
+                    <button
+                      @click.stop="showPreview(scene)"
+                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/60 border border-slate-300/85 backdrop-blur-md flex items-center justify-center text-[14px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/75 active:scale-95 transition"
+                    >
+                      <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
+                        <!-- top-left corner -->
+                        <path d="M5 9V5h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <!-- top-right corner -->
+                        <path d="M19 9V5h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <!-- bottom-left corner -->
+                        <path d="M5 15v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <!-- bottom-right corner -->
+                        <path d="M19 15v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Next button (Desktop only) -->
+            <button
+              type="button"
+              class="hidden md:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-8 h-8 rounded-full bg-white/85 border border-white/80 shadow text-slate-700 text-lg opacity-0 group-hover:opacity-100 transition disabled:opacity-30 disabled:cursor-default"
+              @click.stop="goToNextThumbPage"
+              :disabled="currentThumbPage >= totalThumbPages - 1"
+            >
+              ›
+            </button>
+          </div>
+
+          <div
+            class="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-600"
+          >
+            Seite {{ currentThumbPage + 1 }} / {{ totalThumbPages }}
+          </div>
+        </div>
+
+        <!-- Buttons etwas höher gesetzt -->
+        <div class="flex gap-3 pt-2 mb-1">
+          <button
+            @click="openFileDialog"
+            :disabled="uploading"
+            class="flex-1 h-11 rounded-full bg-sky-400 border border-sky-400 text-white text-sm font-semibold shadow active:scale-95 transition disabled:opacity-60"
+          >
+            {{ uploading ? "Upload…" : "Upload" }}
+          </button>
+
+          <button
+            @click="deleteVisibleScenes"
+            :disabled="visibleCount === 0"
+            class="flex-1 h-11 rounded-full bg-white/90 backdrop-blur border border-white/80 text-slate-800 text-sm font-semibold shadow active:scale-95 transition disabled:opacity-50"
+          >
+            Löschen ({{ visibleCount }})
+          </button>
+
+          <input
+            ref="fileInput"
+            type="file"
+            class="hidden"
+            multiple
+            accept="image/*,image/heic,image/heif,video/*"
+            @change="handleFileChange"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PREVIEW -->
+    <Teleport to="body">
+      <div
+        v-if="previewScene"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl px-4"
+        @click.self="closePreview"
+      >
+        <div class="w-full max-w-3xl">
+          <div class="flex items-center justify-center max-h-[80vh]">
+            <!-- Karte ist jetzt der relative Bezugspunkt -->
+            <div
+              class="relative w-full rounded-[32px] overflow-hidden flex items-center justify-center shadow-[0_22px_60px_rgba(15,23,42,0.55)]"
+            >
+              <!-- Titel + Close immer gleich weit von der Kartenoberkante -->
+              <div
+                class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
+              >
+                <span
+                  class="max-w-[70%] truncate rounded-full bg-white/60 border border-slate-300/85 px-4 py-2 text-[11px] text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.30)] backdrop-blur-md"
+                >
+                  {{
+                    previewScene?.title ||
+                    previewScene?.id?.toString() ||
+                    "Preview"
+                  }}
+                </span>
+
+                <button
+                  class="w-9 h-9 rounded-full bg-white/60 border border-slate-300/85 flex items-center justify-center text-sm text-slate-800 shadow-[0_16px_34px_rgba(15,23,42,0.32)] hover:bg-white/80 active:scale-95 transition backdrop-blur-md"
+                  @click.stop="closePreview"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Media -->
+              <SceneMedia
+                :scene="previewScene"
+                mode="modal-preview"
+                :play-videos-full-length="!!state?.playVideosFullLength"
+                @requestNext="nextScene"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>
