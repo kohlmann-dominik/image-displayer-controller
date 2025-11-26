@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules & Builds
 node_modules
 dist
 dist-ssr
@@ -24,7 +25,6 @@ dist-ssr
 *.sw?
 
 # Medien im Backend ignorieren
-backend/public/images/*
-backend/public/images/**/*
+backend/public/images/**
 !backend/public/images/.gitkeep
 !backend/public/images/thumbnails/.gitkeep
