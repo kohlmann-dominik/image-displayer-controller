@@ -1,0 +1,10 @@
+{
+  "tailwindCSS.experimental.configFile": "tailwind.config.cjs",
+  "tailwindCSS.includeLanguages": {
+    "vue": "html",
+    "vue-html": "html"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}
