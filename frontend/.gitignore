@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Medien im Backend ignorieren
+backend/public/images/*
+backend/public/images/**/*
+!backend/public/images/.gitkeep
+!backend/public/images/thumbnails/.gitkeep
