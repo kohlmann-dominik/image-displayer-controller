@@ -1,1 +1,370 @@
 @import "tailwindcss";
+
+:root {
+  /* leichte türkise Basis für Reflektionen (wird nur subtil genutzt) */
+  --glass-base: 94 234 212;
+}
+
+/* ===== PAGE-HINTERGRUND FÜR DEN GLAS-EFFEKT ===== */
+
+html,
+body {
+  min-height: 100%;
+  overflow: hidden;
+}
+
+/* Hintergrund für die ControlView – helles macOS-Blau, ohne dunkle Töne */
+/* ===== ControlView Hintergrund – macOS-Style in hellem Blau, mehr „Wallpaper“ ===== */
+/* ===== ControlView Hintergrund – helles, kontrastreiches Blau mit "Wave"-Look ===== */
+
+.control-bg {
+  position: relative;
+  min-height: 100dvh;
+
+  /* Bild als Hintergrund */
+  background-image: url("./bg-watercolor-wallpaper.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.control-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+
+  /* etwas aufhellen & glätten */
+  background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.35), transparent 60%)
+              ,radial-gradient(circle at 80% 100%, rgba(255,255,255,0.25), transparent 60%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+/* Zusätzlich direkt hinter deinem View eine „Base-Card“ (falls du sie benutzt) */
+.glass-base-panel {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  backdrop-filter: blur(26px) saturate(1.45);
+}
+
+/* ===== STRONG PANEL – Preview / Modal ===== */
+
+.glass-panel-strong {
+  background-image: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(248, 250, 252, 0.99)
+  );
+  border-color: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.40),
+    0 0 0 1px rgba(255, 255, 255, 0.60) inset;
+  backdrop-filter: blur(26px) saturate(1.45);
+  -webkit-backdrop-filter: blur(26px) saturate(1.45);
+}
+
+/* ===== SOFT PANEL – Controls (Modus/Dauer, Switch, Tabs, etc.) ===== */
+
+.glass-panel-soft {
+  position: relative;
+  z-index: 0;
+  background-image: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(248, 250, 252, 0.99)
+  );
+  border-color: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.30),
+    0 0 0 1px rgba(255, 255, 255, 0.70) inset;
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+
+/* elliptischer „Teppich“-Schatten unter dem Settings-Panel */
+.glass-panel-soft::after {
+  content: "";
+  position: absolute;
+  inset: 72% 10% -30%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(15, 23, 42, 0.2),
+    transparent 60%
+  );
+  opacity: 0.75;
+  filter: blur(18px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ===== Glas-Pill-Buttons (Basis) ===== */
+.glass-pill-btn {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.50) inset;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.glass-pill-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.55);
+}
+
+/* etwas stärkere Variante – z.B. für Play-Button oder Haupt-Controls */
+.glass-pill-strong {
+  background-color: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.40),
+    0 0 0 1px rgba(255, 255, 255, 0.60) inset;
+}
+
+/* Primärer Glas-Button – Upload */
+.glass-pill-primary {
+  /* Blaue Füllung */
+  background-image: linear-gradient(135deg, #0ea5e9, #38bdf8);
+
+  /* Äußerer, leicht blauer Rand */
+  border-color: rgba(56, 189, 248, 0.95);
+
+  color: #ffffff;
+  box-shadow:
+    /* weicher, blauer Drop-Shadow */
+    0 22px 60px rgba(56, 189, 248, 0.75),
+    /* innerer weißer Ring → Doppel-Border-Look wie beim roten Button */
+    0 0 0 1px rgba(255, 255, 255, 0.75) inset;
+
+  position: relative;
+  overflow: visible;
+  z-index: 0;
+}
+
+.glass-pill-primary:disabled {
+  opacity: 0.6;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+}
+
+/* Danger-Variante – Löschen */
+.glass-pill-danger {
+  background-image: linear-gradient(135deg, #e11d48, #fb7185);
+  border-color: rgba(248, 113, 113, 0.95);
+  color: #ffffff;
+  box-shadow:
+    0 22px 60px rgba(159, 18, 57, 0.75),
+    0 0 0 1px rgba(254, 242, 242, 0.65) inset;
+  position: relative;
+  overflow: visible;
+  z-index: 0;
+}
+
+.glass-pill-danger:disabled {
+  opacity: 0.4;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.55);
+}
+
+/* Neutrale Glas-Pill – für Prev/Play/Next etc. */
+.glass-pill-neutral {
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.99));
+  border-color: rgba(255, 255, 255, 0.98);
+  color: #0f172a;
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  border-radius: 9999px;
+  position: relative;
+  overflow: visible;
+  z-index: 0;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.glass-pill-neutral::after {
+  content: "";
+  position: absolute;
+  inset: 70% 10% -30%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(15, 23, 42, 0.28),
+    transparent 60%
+  );
+  opacity: 0.85;
+  filter: blur(14px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* elliptischer Schatten unter Upload / Löschen */
+.glass-pill-primary::after,
+.glass-pill-danger::after {
+  content: "";
+  position: absolute;
+  inset: 70% 10% -30%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(15, 23, 42, 0.32),
+    transparent 60%
+  );
+  opacity: 0.85;
+  filter: blur(14px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Schatten-Teppich für Reihen von runden Buttons (Prev/Play/Next) */
+.glass-float-row {
+  position: relative;
+  z-index: 0;
+}
+
+.glass-float-row::after {
+  content: "";
+  position: absolute;
+  inset: 70% 12% -30%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(15, 23, 42, 0.28),
+    transparent 60%
+  );
+  opacity: 0.9;
+  filter: blur(16px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ===== Slider – heller, „flüssiger“ Track ===== */
+
+.duration-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  width: 100%;
+  background: linear-gradient(
+    to right,
+    #38bdf8 0%,
+    #38bdf8 var(--duration-progress, 50%),
+    #e5e7eb var(--duration-progress, 50%),
+    #e5e7eb 100%
+  );
+}
+
+/* WebKit (Safari, Chrome, iOS) Thumb */
+.duration-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+/* Firefox Thumb */
+.duration-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+/* Firefox Track */
+.duration-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+
+/* Glasiger Thumbnail-Container – ohne sichtbaren weißen Rahmen */
+.glass-thumb {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Thumbnail, Swipe – „echteres“ Wegwischen */
+
+.thumb-page-next-enter-active,
+.thumb-page-next-leave-active,
+.thumb-page-prev-enter-active,
+.thumb-page-prev-leave-active {
+  transition:
+    transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+/* NEXT (nach links wischen) */
+.thumb-page-next-enter-from {
+  transform: translateX(40px) scale(0.98);
+  opacity: 0;
+}
+.thumb-page-next-enter-to {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.thumb-page-next-leave-from {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.thumb-page-next-leave-to {
+  transform: translateX(-40px) scale(0.98);
+  opacity: 0;
+}
+
+/* PREV (nach rechts wischen) */
+.thumb-page-prev-enter-from {
+  transform: translateX(-40px) scale(0.98);
+  opacity: 0;
+}
+.thumb-page-prev-enter-to {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.thumb-page-prev-leave-from {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+.thumb-page-prev-leave-to {
+  transform: translateX(40px) scale(0.98);
+  opacity: 0;
+}
+
+.thumb-swipe-area {
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}

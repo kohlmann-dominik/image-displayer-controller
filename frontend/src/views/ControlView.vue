@@ -28,6 +28,8 @@ const scenesError = ref<string | null>(null)
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const bgFileInput = ref<HTMLInputElement | null>(null)
+const bgImageUrl = ref<string | null>(null)
 
 const previewScene = ref<Scene | null>(null)
 const showPreview = (scene: Scene) => {
@@ -35,6 +37,69 @@ const showPreview = (scene: Scene) => {
 }
 const closePreview = () => {
   previewScene.value = null
+}
+
+function openBgFileDialog() {
+  if (bgFileInput.value) {
+    bgFileInput.value.click()
+  }
+}
+
+function resetBgImage() {
+  if (bgImageUrl.value) {
+    URL.revokeObjectURL(bgImageUrl.value)
+  }
+  bgImageUrl.value = null
+}
+
+async function handleBgFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files || !input.files.length) {
+    return
+  }
+
+  const file = input.files[0]
+  const url = URL.createObjectURL(file)
+
+  if (bgImageUrl.value) {
+    URL.revokeObjectURL(bgImageUrl.value)
+  }
+
+  bgImageUrl.value = url
+}
+
+
+const selectedSceneIds = ref<Array<Scene["id"]>>([])
+const selectedCount = computed(() => selectedSceneIds.value.length)
+
+const allSelected = computed(() => {
+  return scenes.value.length > 0 && selectedSceneIds.value.length === scenes.value.length
+})
+
+function toggleSelectAll() {
+  if (!scenes.value.length) {
+    return
+  }
+
+  if (allSelected.value) {
+    selectedSceneIds.value = []
+  } else {
+    selectedSceneIds.value = scenes.value.map((s) => s.id)
+  }
+}
+
+function isSceneSelected(scene: Scene): boolean {
+  return selectedSceneIds.value.includes(scene.id)
+}
+
+function toggleSceneSelected(scene: Scene) {
+  const id = scene.id
+  const idx = selectedSceneIds.value.indexOf(id)
+  if (idx === -1) {
+    selectedSceneIds.value = [...selectedSceneIds.value, id]
+  } else {
+    selectedSceneIds.value = selectedSceneIds.value.filter((x) => x !== id)
+  }
 }
 
 // Tabs: preview / scenes
@@ -348,6 +413,9 @@ onBeforeUnmount(() => {
   if (unsubscribe) {
     unsubscribe()
   }
+  if (bgImageUrl.value) {
+    URL.revokeObjectURL(bgImageUrl.value)
+  }
 })
 
 async function loadScenes() {
@@ -492,12 +560,19 @@ async function toggleSceneActive(scene: Scene) {
   }
 }
 
-async function deleteVisibleScenes() {
-  const ids = visibleScenes.value.map((scene) => scene.id)
+async function deleteSelectedScenes() {
+  const ids = selectedSceneIds.value
   if (!ids.length) {
     return
   }
-  if (!confirm(`Diese ${ids.length} Datei(en) löschen?`)) {
+
+  const total = scenes.value.length
+  const message =
+    ids.length === total
+      ? `Wirklich ALLE ${total} Szenen löschen?`
+      : `Diese ${ids.length} Datei(en) löschen?`
+
+  if (!confirm(message)) {
     return
   }
   try {
@@ -507,6 +582,7 @@ async function deleteVisibleScenes() {
       ),
     )
     scenes.value = scenes.value.filter((s) => !ids.includes(s.id))
+    selectedSceneIds.value = []
   } catch (e) {
     console.error(e)
     scenesError.value = "Löschen fehlgeschlagen."
@@ -516,12 +592,9 @@ async function deleteVisibleScenes() {
 
 <template>
   <div
-    class="min-h-[100dvh] md:min-h-screen relative overflow-x-hidden text-slate-900 px-4 py-4 md:py-6"
+    class="min-h-[100dvh] md:min-h-screen control-bg relative overflow-x-hidden text-slate-900 px-4 py-4 md:py-6"
+    :style="bgImageUrl ? { backgroundImage: `url('${bgImageUrl}')` } : undefined"
   >
-    <!-- Hintergrund hell, ohne Farbverlauf -->
-    <div class="pointer-events-none absolute inset-0 -z-10 bg-white" />
-
-    <!-- Inhalt -->
     <div class="w-full max-w-md mx-auto space-y-4">
       <!-- TAB HEADERS -->
       <div
@@ -554,16 +627,17 @@ async function deleteVisibleScenes() {
 
       <!-- TAB 1 – PREVIEW -->
       <div v-if="activeTab === 'preview'" class="space-y-5">
+        <!-- Preview-Panel -->
         <div class="relative w-full">
           <div
-            class="w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px] shadow-[0_22px_60px_rgba(15,23,42,0.55)] border-0"
+            class="glass-panel-strong w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
           >
             <!-- HEADER OVERLAY -->
             <div
               class="absolute z-10 inset-x-3 top-3 flex justify-between gap-2"
             >
               <div
-                class="flex flex-col rounded-[30px] bg-white/60 border border-slate-300/80 backdrop-blur-md px-3 py-2 shadow-[0_14px_30px_rgba(15,23,42,0.30)]"
+                class="flex flex-col rounded-[30px] bg-white/70 border border-slate-300/80 backdrop-blur-md px-3 py-2 shadow-[0_14px_30px_rgba(15,23,42,0.30)]"
               >
                 <span
                   class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-800"
@@ -576,7 +650,7 @@ async function deleteVisibleScenes() {
               </div>
 
               <span
-                class="self-start max-w-[55%] truncate rounded-full bg-white/60 border border-slate-300/80 px-3 py-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] backdrop-blur-md"
+                class="self-start max-w-[55%] truncate rounded-full bg-white/70 border border-slate-300/80 px-3 py-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] backdrop-blur-md"
               >
                 {{
                   currentScene
@@ -594,34 +668,58 @@ async function deleteVisibleScenes() {
               @requestNext="nextScene"
             />
           </div>
-          <div class="mt-4 flex items-center justify-center gap-3">
+
+          <!-- CONTROL BUTTONS: Prev / Play / Next -->
+          <div
+            class="mt-4 flex items-center justify-center gap-3 glass-float-row"
+          >
             <button
               @click.stop="prevScene"
-              class="w-11 h-11 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/80 flex items-center justify-center text-lg text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.55)] active:scale-95 transition"
+              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-lg"
               aria-label="Vorherige Szene"
             >
-              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
-                <!-- Left pointing skip icon: triangle + subtle bar on the left -->
-                <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
+              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                <rect
+                  x="5"
+                  y="5"
+                  width="2"
+                  height="14"
+                  rx="0.5"
+                  fill="currentColor"
+                />
                 <path d="M17 5L9 12l8 7z" fill="currentColor" />
               </svg>
             </button>
 
             <button
               @click.stop="togglePlay"
-              class="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-xl border border-white flex items-center justify-center text-xl text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.7)] active:scale-95 transition"
+              class="glass-pill-btn glass-pill-neutral glass-pill-strong w-11 h-11 text-slate-800 text-xl"
               aria-label="Play/Pause"
             >
               <template v-if="state?.isPlaying">
-                <!-- Pause icon: two vertical bars -->
-                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
-                  <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
-                  <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
+                <!-- Pause icon -->
+                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                  <rect
+                    x="6"
+                    y="5"
+                    width="4"
+                    height="14"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="14"
+                    y="5"
+                    width="4"
+                    height="14"
+                    rx="1"
+                    fill="currentColor"
+                  />
                 </svg>
               </template>
               <template v-else>
                 <!-- Play icon -->
-                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                   <path d="M8 5l11 7-11 7z" fill="currentColor" />
                 </svg>
               </template>
@@ -629,18 +727,18 @@ async function deleteVisibleScenes() {
 
             <button
               @click.stop="nextScene"
-              class="w-11 h-11 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/80 flex items-center justify-center text-lg text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.55)] active:scale-95 transition"
+              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-lg"
               aria-label="Nächste Szene"
             >
-              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                 <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
               </svg>
             </button>
           </div>
         </div>
 
-        <!-- SETTINGS -->
-        <div class="pt-6 space-y-5">
+        <!-- SETTINGS PANEL -->
+        <div class="pt-6">
           <div class="glass-panel-soft w-full rounded-[22px] px-4 py-3">
             <div class="flex items-center justify-between gap-3">
               <span
@@ -650,7 +748,7 @@ async function deleteVisibleScenes() {
               </span>
 
               <div
-                class="flex rounded-full bg-white/80 border border-slate-200/60 p-1 text-[11px]"
+                class="flex rounded-full bg-white/90 border border-slate-200/60 p-1 text-[11px]"
               >
                 <button
                   type="button"
@@ -704,6 +802,7 @@ async function deleteVisibleScenes() {
               />
             </div>
 
+
             <div class="mt-5 flex items-center justify-between gap-3">
               <span
                 class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
@@ -725,6 +824,31 @@ async function deleteVisibleScenes() {
                 ></div>
               </label>
             </div>
+            <div class="mt-5 flex items-center justify-between gap-3">
+              <span
+                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+              >
+                Hintergrund
+              </span>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="relative z-20 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-[11px] text-slate-800 shadow-sm hover:bg-white active:scale-95 transition"
+                  @click="openBgFileDialog"
+                >
+                  Bild wählen
+                </button>
+                <button
+                  v-if="bgImageUrl"
+                  type="button"
+                  class="px-3 py-1.5 rounded-full bg-white/60 border border-slate-200/70 text-[11px] text-slate-700 hover:bg-white active:scale-95 transition"
+                  @click="resetBgImage"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -735,16 +859,25 @@ async function deleteVisibleScenes() {
         class="space-y-4 pb-2 flex flex-col h-[calc(100vh-140px)]"
       >
         <!-- Header -->
-        <div class="flex items-baseline justify-between">
+        <div class="flex items-baseline justify-between gap-2">
           <span class="text-[11px] uppercase tracking-[0.22em] text-slate-700">
             Szenen
           </span>
-          <span class="text-[11px] text-slate-700">
-            {{ visibleCount }} sichtbar von {{ scenes.length }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-700">
+              {{ visibleCount }} sichtbar von {{ scenes.length }}
+            </span>
+            <button
+              type="button"
+              class="text-[10px] px-2 py-1 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+              @click="toggleSelectAll"
+            >
+              {{ allSelected ? "Auswahl leeren" : "Alle auswählen" }}
+            </button>
+          </div>
         </div>
 
-        <!-- Scroll Container (fixe Höhe, keine vertikale Scrollbar) -->
+        <!-- Scroll Container -->
         <div class="flex-1 min-h-0 overflow-y-hidden px-1 pt-1 pb-1">
           <div
             ref="thumbOuter"
@@ -763,28 +896,28 @@ async function deleteVisibleScenes() {
               ‹
             </button>
 
-            <!-- Alle Seiten nebeneinander, wir blenden per translateX die aktuelle ein -->
+            <!-- Track mit Seiten -->
             <div class="flex" :style="trackStyle">
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
                 class="w-full flex-shrink-0"
               >
-                <div class="grid grid-cols-2 gap-3 pr-1 pb-1">
+                <div class="grid grid-cols-2 gap-3 p-1">
                   <div
                     v-for="scene in pageScenes"
                     :key="scene.id"
                     @click="toggleSceneActive(scene)"
                     :class="[
-                      'relative rounded-[24px] cursor-pointer bg-white shadow transition',
+                      'relative rounded-[24px] cursor-pointer transition',
                       scene.visible === false ? 'opacity-35 grayscale' : 'opacity-100'
                     ]"
                   >
                     <!-- innerer Wrapper: Bild + blauer Rahmen -->
                     <div
                       :class="[
-                        'overflow-hidden rounded-[22px] border-[3px] border-transparent bg-white',
-                        scene.id === state?.currentSceneId ? 'border-sky-400' : ''
+                        'overflow-hidden glass-thumb',
+                        scene.id === state?.currentSceneId ? 'ring-3 ring-sky-400' : ''
                       ]"
                     >
                       <div class="w-full h-[170px] sm:h-[185px]">
@@ -817,18 +950,60 @@ async function deleteVisibleScenes() {
                     </div>
 
                     <button
-                      @click.stop="showPreview(scene)"
-                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/60 border border-slate-300/85 backdrop-blur-md flex items-center justify-center text-[14px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/75 active:scale-95 transition"
+                      type="button"
+                      @click.stop="toggleSceneSelected(scene)"
+                      :class="[
+                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center text-[14px] shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80 active:scale-95 transition z-20 cursor-pointer',
+                        isSceneSelected(scene)
+                          ? 'bg-sky-400 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
+                          : 'bg-white/70 border border-slate-300/85 text-slate-800'
+                      ]"
                     >
                       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
-                        <!-- top-left corner -->
-                        <path d="M5 9V5h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <!-- top-right corner -->
-                        <path d="M19 9V5h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <!-- bottom-left corner -->
-                        <path d="M5 15v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <!-- bottom-right corner -->
-                        <path d="M19 15v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <path
+                          d="M6 12.5l3.5 3.5L18 7.5"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+
+                    <button
+                      @click.stop="showPreview(scene)"
+                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 border border-slate-300/85 backdrop-blur-md flex items-center justify-center text-[14px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80 active:scale-95 transition"
+                    >
+                      <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
+                        <path
+                          d="M5 9V5h4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M19 9V5h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M5 15v4h4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
+                        <path
+                          d="M19 15v4h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -848,28 +1023,28 @@ async function deleteVisibleScenes() {
           </div>
 
           <div
-            class="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-600"
+            class="mt-1 flex items-center justify-center gap-2 text-[10px] text-slate-600"
           >
             Seite {{ currentThumbPage + 1 }} / {{ totalThumbPages }}
           </div>
         </div>
 
-        <!-- Buttons etwas höher gesetzt -->
+        <!-- Buttons unten -->
         <div class="flex gap-3 pt-2 mb-1">
           <button
             @click="openFileDialog"
             :disabled="uploading"
-            class="flex-1 h-11 rounded-full bg-sky-400 border border-sky-400 text-white text-sm font-semibold shadow active:scale-95 transition disabled:opacity-60"
+            class="flex-1 h-12 glass-pill-btn glass-pill-primary text-sm font-semibold flex items-center justify-center"
           >
             {{ uploading ? "Upload…" : "Upload" }}
           </button>
 
           <button
-            @click="deleteVisibleScenes"
-            :disabled="visibleCount === 0"
-            class="flex-1 h-11 rounded-full bg-white/90 backdrop-blur border border-white/80 text-slate-800 text-sm font-semibold shadow active:scale-95 transition disabled:opacity-50"
+            @click="deleteSelectedScenes"
+            :disabled="selectedCount === 0"
+            class="flex-1 h-12 glass-pill-btn glass-pill-danger text-sm font-semibold flex items-center justify-center"
           >
-            Löschen ({{ visibleCount }})
+            Löschen ({{ selectedCount }})
           </button>
 
           <input
@@ -884,6 +1059,15 @@ async function deleteVisibleScenes() {
       </div>
     </div>
 
+    <!-- globaler, unsichtbarer Input für das Hintergrundbild -->
+    <input
+      ref="bgFileInput"
+      type="file"
+      class="hidden"
+      accept="image/*"
+      @change="handleBgFileChange"
+    />
+
     <!-- MODAL PREVIEW -->
     <Teleport to="body">
       <div
@@ -893,16 +1077,14 @@ async function deleteVisibleScenes() {
       >
         <div class="w-full max-w-3xl">
           <div class="flex items-center justify-center max-h-[80vh]">
-            <!-- Karte ist jetzt der relative Bezugspunkt -->
             <div
-              class="relative w-full rounded-[32px] overflow-hidden flex items-center justify-center shadow-[0_22px_60px_rgba(15,23,42,0.55)]"
+              class="glass-panel-strong relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
             >
-              <!-- Titel + Close immer gleich weit von der Kartenoberkante -->
               <div
                 class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
               >
                 <span
-                  class="max-w-[70%] truncate rounded-full bg-white/60 border border-slate-300/85 px-4 py-2 text-[11px] text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.30)] backdrop-blur-md"
+                  class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-300/85 px-4 py-2 text-[11px] text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.30)] backdrop-blur-md"
                 >
                   {{
                     previewScene?.title ||
@@ -912,14 +1094,13 @@ async function deleteVisibleScenes() {
                 </span>
 
                 <button
-                  class="w-9 h-9 rounded-full bg-white/60 border border-slate-300/85 flex items-center justify-center text-sm text-slate-800 shadow-[0_16px_34px_rgba(15,23,42,0.32)] hover:bg-white/80 active:scale-95 transition backdrop-blur-md"
+                  class="w-9 h-9 rounded-full bg-white/70 border border-slate-300/85 flex items-center justify-center text-sm text-slate-800 shadow-[0_16px_34px_rgba(15,23,42,0.32)] hover:bg-white/80 active:scale-95 transition backdrop-blur-md"
                   @click.stop="closePreview"
                 >
                   ✕
                 </button>
               </div>
 
-              <!-- Media -->
               <SceneMedia
                 :scene="previewScene"
                 mode="modal-preview"
