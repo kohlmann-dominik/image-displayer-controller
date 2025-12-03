@@ -8,7 +8,9 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "rootDir": "src",
+    "outDir": "dist"
   },
   "include": ["src"]
 }

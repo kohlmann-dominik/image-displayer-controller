@@ -28,8 +28,6 @@ const scenesError = ref<string | null>(null)
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const bgFileInput = ref<HTMLInputElement | null>(null)
-const bgImageUrl = ref<string | null>(null)
 
 const previewScene = ref<Scene | null>(null)
 const showPreview = (scene: Scene) => {
@@ -39,34 +37,6 @@ const closePreview = () => {
   previewScene.value = null
 }
 
-function openBgFileDialog() {
-  if (bgFileInput.value) {
-    bgFileInput.value.click()
-  }
-}
-
-function resetBgImage() {
-  if (bgImageUrl.value) {
-    URL.revokeObjectURL(bgImageUrl.value)
-  }
-  bgImageUrl.value = null
-}
-
-async function handleBgFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  if (!input.files || !input.files.length) {
-    return
-  }
-
-  const file = input.files[0]
-  const url = URL.createObjectURL(file)
-
-  if (bgImageUrl.value) {
-    URL.revokeObjectURL(bgImageUrl.value)
-  }
-
-  bgImageUrl.value = url
-}
 
 
 const selectedSceneIds = ref<Array<Scene["id"]>>([])
@@ -413,9 +383,6 @@ onBeforeUnmount(() => {
   if (unsubscribe) {
     unsubscribe()
   }
-  if (bgImageUrl.value) {
-    URL.revokeObjectURL(bgImageUrl.value)
-  }
 })
 
 async function loadScenes() {
@@ -593,7 +560,6 @@ async function deleteSelectedScenes() {
 <template>
   <div
     class="min-h-[100dvh] md:min-h-screen control-bg relative overflow-x-hidden text-slate-900 px-4 py-4 md:py-6"
-    :style="bgImageUrl ? { backgroundImage: `url('${bgImageUrl}')` } : undefined"
   >
     <div class="w-full max-w-md mx-auto space-y-4">
       <!-- TAB HEADERS -->
@@ -629,44 +595,57 @@ async function deleteSelectedScenes() {
       <div v-if="activeTab === 'preview'" class="space-y-5">
         <!-- Preview-Panel -->
         <div class="relative w-full">
-          <div
-            class="glass-panel-strong w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
-          >
-            <!-- HEADER OVERLAY -->
+          <!-- Info-Bar über der Live-Preview -->
+          <div class="flex items-center justify-between gap-3 mb-2 px-1">
             <div
-              class="absolute z-10 inset-x-3 top-3 flex justify-between gap-2"
+              class="flex flex-col rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-slate-700 shadow-sm"
             >
-              <div
-                class="flex flex-col rounded-[30px] bg-white/70 border border-slate-300/80 backdrop-blur-md px-3 py-2 shadow-[0_14px_30px_rgba(15,23,42,0.30)]"
-              >
-                <span
-                  class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-800"
-                >
-                  Live Preview
-                </span>
-                <span class="text-[10px] text-slate-800 mt-0.5">
-                  {{ visibleCount }} aktive Szene(n)
-                </span>
-              </div>
-
               <span
-                class="self-start max-w-[55%] truncate rounded-full bg-white/70 border border-slate-300/80 px-3 py-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] backdrop-blur-md"
+                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-800"
               >
-                {{
-                  currentScene
-                    ? currentScene.title || `Scene ${currentScene.id}`
-                    : "Keine Szene ausgewählt"
-                }}
+                Live Preview
+              </span>
+              <span class="text-[10px] text-slate-800 mt-0.5">
+                {{ visibleCount }} aktive Szene(n)
               </span>
             </div>
 
+            <span
+              class="max-w-[55%] truncate rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+            >
+              {{
+                currentScene
+                  ? currentScene.title || `Scene ${currentScene.id}`
+                  : "Keine Szene ausgewählt"
+              }}
+            </span>
+          </div>
+
+          <!-- Preview-Panel -->
+          <div
+            class="glass-panel-strong w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
+          >
             <!-- MEDIA -->
-            <SceneMedia
-              :scene="currentScene"
-              mode="control-preview"
-              :play-videos-full-length="!!state?.playVideosFullLength"
-              @requestNext="nextScene"
-            />
+            <div class="w-full h-full relative">
+              <Transition name="preview-slide">
+                <SceneMedia
+                  v-if="currentScene"
+                  :key="currentScene.id"
+                  :scene="currentScene"
+                  mode="control-preview"
+                  :play-videos-full-length="!!state?.playVideosFullLength"
+                  @requestNext="nextScene"
+                  class="preview-slide-item absolute inset-0"
+                />
+              </Transition>
+
+              <div
+                v-if="!currentScene"
+                class="preview-slide-item absolute inset-0 flex items-center justify-center text-xs text-slate-500"
+              >
+                Keine Szene ausgewählt
+              </div>
+            </div>
           </div>
 
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
@@ -693,7 +672,7 @@ async function deleteSelectedScenes() {
 
             <button
               @click.stop="togglePlay"
-              class="glass-pill-btn glass-pill-neutral glass-pill-strong w-11 h-11 text-slate-800 text-xl"
+              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-xl"
               aria-label="Play/Pause"
             >
               <template v-if="state?.isPlaying">
@@ -824,31 +803,6 @@ async function deleteSelectedScenes() {
                 ></div>
               </label>
             </div>
-            <div class="mt-5 flex items-center justify-between gap-3">
-              <span
-                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
-              >
-                Hintergrund
-              </span>
-
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="relative z-20 px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 text-[11px] text-slate-800 shadow-sm hover:bg-white active:scale-95 transition"
-                  @click="openBgFileDialog"
-                >
-                  Bild wählen
-                </button>
-                <button
-                  v-if="bgImageUrl"
-                  type="button"
-                  class="px-3 py-1.5 rounded-full bg-white/60 border border-slate-200/70 text-[11px] text-slate-700 hover:bg-white active:scale-95 transition"
-                  @click="resetBgImage"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -953,10 +907,10 @@ async function deleteSelectedScenes() {
                       type="button"
                       @click.stop="toggleSceneSelected(scene)"
                       :class="[
-                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center text-[14px] shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80 active:scale-95 transition z-20 cursor-pointer',
+                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center text-[14px] z-20 cursor-pointer transition active:scale-95',
                         isSceneSelected(scene)
                           ? 'bg-sky-400 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
-                          : 'bg-white/70 border border-slate-300/85 text-slate-800'
+                          : 'bg-white/70 border border-slate-300/85 text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80'
                       ]"
                     >
                       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
@@ -973,7 +927,7 @@ async function deleteSelectedScenes() {
 
                     <button
                       @click.stop="showPreview(scene)"
-                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 border border-slate-300/85 backdrop-blur-md flex items-center justify-center text-[14px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80 active:scale-95 transition"
+                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-[14px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
                     >
                       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
                         <path
@@ -1059,14 +1013,6 @@ async function deleteSelectedScenes() {
       </div>
     </div>
 
-    <!-- globaler, unsichtbarer Input für das Hintergrundbild -->
-    <input
-      ref="bgFileInput"
-      type="file"
-      class="hidden"
-      accept="image/*"
-      @change="handleBgFileChange"
-    />
 
     <!-- MODAL PREVIEW -->
     <Teleport to="body">
@@ -1084,7 +1030,7 @@ async function deleteSelectedScenes() {
                 class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
               >
                 <span
-                  class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-300/85 px-4 py-2 text-[11px] text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.30)] backdrop-blur-md"
+                  class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
                 >
                   {{
                     previewScene?.title ||
@@ -1094,7 +1040,7 @@ async function deleteSelectedScenes() {
                 </span>
 
                 <button
-                  class="w-9 h-9 rounded-full bg-white/70 border border-slate-300/85 flex items-center justify-center text-sm text-slate-800 shadow-[0_16px_34px_rgba(15,23,42,0.32)] hover:bg-white/80 active:scale-95 transition backdrop-blur-md"
+                  class="w-9 h-9 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
                   @click.stop="closePreview"
                 >
                   ✕
