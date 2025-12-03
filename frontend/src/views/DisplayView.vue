@@ -78,12 +78,17 @@ function handleStateUpdate(s: PlayerState) {
   state.value = { ...s }
 
   // Falls noch keine Szene gesetzt ist, aber sichtbare Szenen existieren:
-  if (state.value.currentSceneId == null && visibleScenes.value.length > 0) {
-    const first = visibleScenes.value[0]
-    sendMessage({ type: "SET_SCENE", payload: { sceneId: first.id } })
-    // Wir returnen hier, der nächste State-Update kommt sofort nach dem Backend-Update
+if ((state.value?.currentSceneId == null) && visibleScenes.value.length > 0) {
+  const first = visibleScenes.value[0]
+  if (!first) {
+    // sollte eigentlich nie passieren, aber TS ist dann zufrieden
     return
   }
+
+  sendMessage({ type: "SET_SCENE", payload: { sceneId: first.id } })
+  // Wir returnen hier, der nächste State-Update kommt sofort nach dem Backend-Update
+  return
+}
 
   const relevantChanged =
     !prev ||
