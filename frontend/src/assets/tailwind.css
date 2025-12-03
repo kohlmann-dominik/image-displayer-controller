@@ -24,7 +24,7 @@ body {
   min-height: 100dvh;
 
   /* Bild als Hintergrund */
-  background-image: url("./bg-blue-mountain-wallpaper.png");
+  background-image: url("./image.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
