@@ -598,7 +598,7 @@ async function deleteSelectedScenes() {
 
 <template>
   <div
-    class="min-h-[100dvh] md:min-h-screen control-bg relative overflow-x-hidden text-slate-900 px-4 py-4 md:py-6"
+    class="h-[100dvh] md:h-screen control-bg relative overflow-x-hidden overflow-y-hidden text-slate-900 px-4 py-4 md:py-6"
   >
     <div class="w-full max-w-md mx-auto space-y-4">
       <!-- TAB HEADERS -->
