@@ -114,22 +114,22 @@ function computeNextScene(): Scene | null {
 
   if (mode === "random") {
     if (list.length === 1) {
-      return list[0]
+      return list[0] ?? null
     }
     let idx = currentIndex
     // stelle sicher, dass wir nicht immer die gleiche Szene erwischen
     while (idx === currentIndex || idx === -1) {
       idx = Math.floor(Math.random() * list.length)
     }
-    return list[idx]
+    return list[idx] ?? null
   }
 
   // sequential (default)
   if (currentIndex === -1) {
-    return list[0]
+    return list[0] ?? null
   }
   const nextIndex = (currentIndex + 1) % list.length
-  return list[nextIndex]
+  return list[nextIndex] ?? null
 }
 
 function scheduleNextByTimer() {
@@ -247,12 +247,13 @@ function goToNextThumbPage() {
 }
 
 function onThumbTouchStart(e: TouchEvent) {
-  if (!e.touches || e.touches.length === 0) {
+  const firstTouch = e.touches[0]
+  if (!firstTouch) {
     return
   }
 
   dragging.value = true
-  dragStartX.value = e.touches[0].clientX
+  dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
 
   // Während des aktiven Drags keine CSS-Transition,
@@ -260,12 +261,15 @@ function onThumbTouchStart(e: TouchEvent) {
   disableTransition.value = true
 }
 
+
 function onThumbTouchMove(e: TouchEvent) {
-  if (!dragging.value || !e.touches || e.touches.length === 0) {
+  const firstTouch = e.touches[0]
+
+  if (!dragging.value || !firstTouch || dragStartX.value === null) {
     return
   }
 
-  const currentX = e.touches[0].clientX
+  const currentX = firstTouch.clientX
   dragOffsetX.value = currentX - dragStartX.value
 }
 
@@ -432,13 +436,21 @@ function prevScene() {
   if (!state.value || !visibleScenes.value.length) {
     return
   }
+
   const idx = visibleScenes.value.findIndex(
-    (s) => s.id === state.value!.currentSceneId,
+    (s) => s.id === state.value?.currentSceneId,
   )
+
   const prevIndex = idx <= 0 ? visibleScenes.value.length - 1 : idx - 1
+  const targetScene = visibleScenes.value[prevIndex]
+
+  if (!targetScene) {
+    return
+  }
+
   sendMessage({
     type: "SET_SCENE",
-    payload: { sceneId: visibleScenes.value[prevIndex].id },
+    payload: { sceneId: targetScene.id },
   })
 }
 
