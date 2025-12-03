@@ -123,7 +123,7 @@ function handleRequestNext() {
 
 <template>
   <div class="w-screen h-screen bg-black flex items-center justify-center overflow-hidden">
-    <div class="w-full h-full flex items-center justify-center">
+    <div class="w-full h-full flex items-center justify-center py-4 md:py-6">
       <SceneMedia
         :scene="currentScene"
         mode="display"
