@@ -98,7 +98,7 @@ function handleEnded() {
           ref="videoRef"
           :src="srcUrl"
           class="w-full h-full object-contain"
-          :muted="mode !== 'display'"
+          muted
           playsinline
           preload="auto"
           @ended="handleEnded"
