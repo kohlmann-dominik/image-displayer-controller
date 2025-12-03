@@ -337,6 +337,10 @@ app.post(
         const newScene = addScene(sceneInput)
         await ensureThumbnail(newScene)
         created.push(newScene)
+
+        if (state.currentSceneId == null) {
+          setCurrentScene(newScene.id)
+        }
       }
 
       res.status(201).json(created.map(sceneToResponse))
@@ -387,6 +391,11 @@ app.delete("/api/scenes/:id", async (req: Request, res: Response) => {
   const thumbPath = getThumbnailPath(removed)
   if (isRealFile(thumbPath)) {
     fs.unlinkSync(thumbPath)
+  }
+
+  if (!scenes.length) {
+    state.currentSceneId = null
+    broadcastState()
   }
 
   res.json({ ok: true })

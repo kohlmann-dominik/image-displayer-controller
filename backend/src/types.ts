@@ -3,7 +3,7 @@
 export type PlayMode = "sequential" | "random"
 
 export interface PlayerState {
-  currentSceneId: number
+  currentSceneId: number | null
   isPlaying: boolean
   mode: PlayMode
   transitionMs: number

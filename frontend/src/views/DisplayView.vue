@@ -77,17 +77,12 @@ function handleStateUpdate(s: PlayerState) {
   const prev = state.value
   state.value = { ...s }
 
-  // Wenn der aktuelle State auf eine Szene verweist, die wir lokal noch nicht kennen,
-  // (z. B. neu hochgeladen), dann Szenen nachladen.
-  if (state.value && state.value.currentSceneId != null) {
-    const exists = scenes.value.some(
-      (scene) => scene.id === state.value!.currentSceneId,
-    )
-
-    if (!exists) {
-      // neu laden, aber nicht blockieren
-      loadScenes()
-    }
+  // Falls noch keine Szene gesetzt ist, aber sichtbare Szenen existieren:
+  if (state.value.currentSceneId == null && visibleScenes.value.length > 0) {
+    const first = visibleScenes.value[0]
+    sendMessage({ type: "SET_SCENE", payload: { sceneId: first.id } })
+    // Wir returnen hier, der nächste State-Update kommt sofort nach dem Backend-Update
+    return
   }
 
   const relevantChanged =
