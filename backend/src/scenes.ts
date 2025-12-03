@@ -16,10 +16,18 @@ export interface Scene {
 const dataFile = path.join(__dirname, "..", "data", "scenes.json")
 const imagesDir = path.join(__dirname, "..", "public", "images")
 
-function ensureImagesDir() {
+function ensureImagesDir(): void {
   if (!fs.existsSync(imagesDir)) {
     fs.mkdirSync(imagesDir, { recursive: true })
   }
+}
+
+/**
+ * Wird vom Upload-Endpoint verwendet, um sicher denselben Ordner zu nutzen.
+ */
+export function getImagesDir(): string {
+  ensureImagesDir()
+  return imagesDir
 }
 
 function loadScenesFromFile(): Scene[] {
@@ -89,7 +97,7 @@ function loadScenesFromFile(): Scene[] {
   }
 }
 
-function saveScenesToFile(allScenes: Scene[]) {
+function saveScenesToFile(allScenes: Scene[]): void {
   try {
     const dir = path.dirname(dataFile)
     if (!fs.existsSync(dir)) {
@@ -105,11 +113,24 @@ function saveScenesToFile(allScenes: Scene[]) {
 export let scenes: Scene[] = loadScenesFromFile()
 
 function getNextId(): number {
-  return scenes.length ? Math.max(...scenes.map((s) => s.id)) + 1 : 1
+  if (scenes.length === 0) {
+    return 1
+  }
+
+  return Math.max(...scenes.map((s) => s.id)) + 1
+}
+
+function detectTypeFromFilename(filename: string): "image" | "video" {
+  const lower = filename.toLowerCase()
+  if (/\.(mp4|mov|m4v|webm)$/i.test(lower)) {
+    return "video"
+  }
+
+  return "image"
 }
 
 // Scenes mit Dateisystem synchronisieren
-function syncScenesWithFilesystem() {
+function internalSyncScenesWithFilesystem(): void {
   ensureImagesDir()
 
   // Nur echte Dateien (keine Verzeichnisse) aus imagesDir holen
@@ -130,7 +151,6 @@ function syncScenesWithFilesystem() {
   const fileSet = new Set(filesOnDisk)
 
   // 1) Scenes entfernen, deren Dateien es nicht mehr gibt
-  //    oder deren "filename" gar keine echte Datei ist (z. B. "thumbnails"-Ordner)
   scenes = scenes.filter((s) => fileSet.has(s.filename))
 
   // 2) Scenes für neue Dateien anlegen
@@ -142,15 +162,12 @@ function syncScenesWithFilesystem() {
       continue
     }
 
-    const lower = file.toLowerCase()
-    const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(lower)
-
     const scene: Scene = {
       id: nextId++,
       filename: file,
       title: file,
       description: "",
-      type: isVideo ? "video" : "image",
+      type: detectTypeFromFilename(file),
       visible: true,
       // thumbnailUrl wird im Server bei Bedarf zur Laufzeit gesetzt
     }
@@ -161,8 +178,16 @@ function syncScenesWithFilesystem() {
   saveScenesToFile(scenes)
 }
 
+/**
+ * Optional von außen nutzbar, falls du nach vielen Änderungen
+ * nochmal mit dem Dateisystem abgleichen willst.
+ */
+export function syncScenesWithFilesystem(): void {
+  internalSyncScenesWithFilesystem()
+}
+
 // Beim Start direkt einmal synchronisieren
-syncScenesWithFilesystem()
+internalSyncScenesWithFilesystem()
 
 // --- API-Funktionen für server.ts ---
 
@@ -173,6 +198,35 @@ export function addScene(input: Omit<Scene, "id">): Scene {
   }
   scenes.push(scene)
   saveScenesToFile(scenes)
+  return scene
+}
+
+/**
+ * Helfer für Upload-Endpoints:
+ * Legt (falls noch nicht vorhanden) eine Scene für eine hochgeladene Datei an.
+ */
+export function addSceneFromFilename(filename: string): Scene {
+  ensureImagesDir()
+
+  const existing = scenes.find((s) => s.filename === filename)
+  if (existing) {
+    return existing
+  }
+
+  const type = detectTypeFromFilename(filename)
+
+  const scene: Scene = {
+    id: getNextId(),
+    filename,
+    title: filename,
+    description: "",
+    type,
+    visible: true,
+  }
+
+  scenes.push(scene)
+  saveScenesToFile(scenes)
+
   return scene
 }
 

@@ -195,8 +195,11 @@ const upload = multer({
       cb(null, finalName)
     },
   }),
+  limits: {
+    // z. B. 2 GB pro Datei – nach Bedarf anpassen
+    fileSize: 1024 * 1024 * 1024 * 2,
+  },
 })
-
 // ===================
 // PLAYER STATE + WS
 // ===================
@@ -308,48 +311,61 @@ app.get("/api/scenes", (req: Request, res: Response) => {
   res.json(scenes.map(sceneToResponse))
 })
 
-// Upload von Bildern/Videos
+// Upload von Bildern/Videos (eine Datei pro Request)
 app.post(
   "/api/scenes/upload",
-  upload.array("files"),
+  upload.single("file"),
   async (req: Request, res: Response) => {
     try {
-      const files = (req as any).files as Express.Multer.File[]
-      if (!files || !files.length) {
-        return res.status(400).json({ error: "Keine Dateien hochgeladen." })
+      console.log("[upload] incoming request…")
+
+      const file = (req as any).file as Express.Multer.File | undefined
+
+      if (!file) {
+        console.warn("[upload] keine Datei erhalten")
+        res.status(400).json({ error: "Keine Datei hochgeladen." })
+        return
       }
 
-      const created: SceneModel[] = []
+      console.log(
+        "[upload] file received:",
+        file.originalname,
+        "->",
+        file.filename,
+        "size:",
+        file.size,
+      )
 
-      for (const file of files) {
-        const lower = file.filename.toLowerCase()
-        const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(lower)
+      const lower = file.filename.toLowerCase()
+      const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(lower)
 
-        const sceneInput: Omit<SceneModel, "id"> = {
-          filename: file.filename,
-          title: file.originalname,
-          description: "",
-          type: isVideo ? "video" : "image",
-          visible: true,
-          thumbnailUrl: undefined,
-        }
-
-        const newScene = addScene(sceneInput)
-        await ensureThumbnail(newScene)
-        created.push(newScene)
-
-        if (state.currentSceneId == null) {
-          setCurrentScene(newScene.id)
-        }
+      const sceneInput: Omit<SceneModel, "id"> = {
+        filename: file.filename,
+        title: file.originalname,
+        description: "",
+        type: isVideo ? "video" : "image",
+        visible: true,
+        thumbnailUrl: undefined,
       }
 
-      res.status(201).json(created.map(sceneToResponse))
+      const newScene = addScene(sceneInput)
+      await ensureThumbnail(newScene)
+
+      if (state.currentSceneId == null) {
+        setCurrentScene(newScene.id)
+      }
+
+      console.log("[upload] scene created with id:", newScene.id)
+
+      res.status(201).json(sceneToResponse(newScene))
     } catch (err) {
       console.error("[upload] error:", err)
       res.status(500).json({ error: "Upload fehlgeschlagen." })
     }
   },
 )
+
+
 
 // Szene aktualisieren (z. B. visible)
 app.patch("/api/scenes/:id", async (req: Request, res: Response) => {

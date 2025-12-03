@@ -481,49 +481,104 @@ function openFileDialog() {
   }
 }
 
-async function handleFileChange(e: Event) {
+function handleFileChange(e: Event): void {
   const input = e.target as HTMLInputElement
-  if (!input.files || !input.files.length) {
+
+  if (!input.files || input.files.length === 0) {
     return
   }
-  await uploadFiles(input.files)
+
+  console.log("[upload] selected files:", input.files.length)
+
+  void uploadFiles(input.files)
   input.value = ""
 }
 
-async function uploadFiles(files: FileList) {
+async function uploadFiles(files: FileList | File[]): Promise<void> {
   uploading.value = true
   uploadError.value = null
 
+  const hadScenesBefore = scenes.value.length > 0
+  let firstNewScene: Scene | null = null
+
   try {
-    const form = new FormData()
-    Array.from(files).forEach((f) => {
-      form.append("files", f)
-    })
+    const fileArray = Array.from(files)
 
-    const res = await fetch(`${API_BASE}/api/scenes/upload`, {
-      method: "POST",
-      body: form,
-    })
+    for (const file of fileArray) {
+      console.log("[upload] starting upload for:", file.name)
 
-    if (!res.ok) {
-      throw new Error(`Upload fehlgeschlagen (HTTP ${res.status})`)
+      const formData = new FormData()
+      formData.append("file", file)
+
+      let response: Response
+
+      try {
+        response = await fetch(`${API_BASE}/api/scenes/upload`, {
+          method: "POST",
+          body: formData,
+        })
+      } catch (networkError: unknown) {
+        console.error("Network error while uploading", file.name, networkError)
+        uploadError.value = "Netzwerkfehler beim Upload."
+        continue
+      }
+
+      if (!response.ok) {
+        console.error(
+          "Upload failed for",
+          file.name,
+          "status:",
+          response.status,
+        )
+        uploadError.value = `Upload fehlgeschlagen für ${file.name} (HTTP ${response.status}).`
+        continue
+      }
+
+      let payload: unknown
+
+      try {
+        payload = await response.json()
+      } catch (parseError: unknown) {
+        console.error(
+          "Failed to parse response JSON for",
+          file.name,
+          parseError,
+        )
+        uploadError.value = "Antwort vom Server konnte nicht gelesen werden."
+        continue
+      }
+
+      let createdScenes: Scene[] = []
+
+      if (Array.isArray(payload)) {
+        createdScenes = payload as Scene[]
+      } else {
+        createdScenes = [payload as Scene]
+      }
+
+      if (createdScenes.length === 0) {
+        continue
+      }
+
+      console.log(
+        "[upload] server returned",
+        createdScenes.length,
+        "scene(s) for",
+        file.name,
+      )
+
+      scenes.value.push(...createdScenes)
+
+      if (firstNewScene === null) {
+        firstNewScene = createdScenes[0] ?? null
+      }
     }
 
-    const created = (await res.json()) as Scene[]
-
-    const hadScenesBefore = scenes.value.length > 0
-
-    scenes.value.push(...created)
-
-    // Wenn vorher keine Szenen existiert haben:
-    // -> erste neue Szene auswählen und Slideshow starten
-    if (!hadScenesBefore && created.length > 0) {
-      const first = created[0]
-
-      if (first && typeof first.id === "number") {
+    if (!hadScenesBefore && firstNewScene !== null) {
+      if (typeof firstNewScene.id === "number") {
         sendMessage({
           type: "SET_SCENE",
-          payload: { sceneId: first.id },
+          payload: { sceneId: firstNewScene.id },
         })
 
         sendMessage({
@@ -532,9 +587,9 @@ async function uploadFiles(files: FileList) {
         })
       }
     }
-  } catch (e: any) {
-    console.error(e)
-    uploadError.value = e?.message ?? "Upload fehlgeschlagen."
+  } catch (error: unknown) {
+    console.error("Unexpected upload error:", error)
+    uploadError.value = "Upload fehlgeschlagen."
   } finally {
     uploading.value = false
   }
@@ -662,7 +717,7 @@ async function deleteSelectedScenes() {
 
           <!-- Preview-Panel -->
           <div
-            class="glass-panel-strong w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
+            class="glass-panel-soft w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
           >
             <!-- MEDIA -->
             <div class="w-full h-full relative">
@@ -1060,7 +1115,7 @@ async function deleteSelectedScenes() {
         <div class="w-full max-w-3xl">
           <div class="flex items-center justify-center max-h-[80vh]">
             <div
-              class="glass-panel-strong relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
+              class="glass-panel-soft relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
             >
               <div
                 class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
