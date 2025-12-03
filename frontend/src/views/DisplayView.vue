@@ -77,6 +77,19 @@ function handleStateUpdate(s: PlayerState) {
   const prev = state.value
   state.value = { ...s }
 
+  // Wenn der aktuelle State auf eine Szene verweist, die wir lokal noch nicht kennen,
+  // (z. B. neu hochgeladen), dann Szenen nachladen.
+  if (state.value && state.value.currentSceneId != null) {
+    const exists = scenes.value.some(
+      (scene) => scene.id === state.value!.currentSceneId,
+    )
+
+    if (!exists) {
+      // neu laden, aber nicht blockieren
+      loadScenes()
+    }
+  }
+
   const relevantChanged =
     !prev ||
     prev.currentSceneId !== s.currentSceneId ||

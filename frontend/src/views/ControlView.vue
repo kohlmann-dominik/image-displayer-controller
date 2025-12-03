@@ -493,18 +493,45 @@ async function handleFileChange(e: Event) {
 async function uploadFiles(files: FileList) {
   uploading.value = true
   uploadError.value = null
+
   try {
     const form = new FormData()
-    Array.from(files).forEach((f) => form.append("files", f))
+    Array.from(files).forEach((f) => {
+      form.append("files", f)
+    })
+
     const res = await fetch(`${API_BASE}/api/scenes/upload`, {
       method: "POST",
       body: form,
     })
+
     if (!res.ok) {
       throw new Error(`Upload fehlgeschlagen (HTTP ${res.status})`)
     }
+
     const created = (await res.json()) as Scene[]
+
+    const hadScenesBefore = scenes.value.length > 0
+
     scenes.value.push(...created)
+
+    // Wenn vorher keine Szenen existiert haben:
+    // -> erste neue Szene auswählen und Slideshow starten
+    if (!hadScenesBefore && created.length > 0) {
+      const first = created[0]
+
+      if (first && typeof first.id === "number") {
+        sendMessage({
+          type: "SET_SCENE",
+          payload: { sceneId: first.id },
+        })
+
+        sendMessage({
+          type: "SET_STATE",
+          payload: { isPlaying: true },
+        })
+      }
+    }
   } catch (e: any) {
     console.error(e)
     uploadError.value = e?.message ?? "Upload fehlgeschlagen."
@@ -639,7 +666,6 @@ async function deleteSelectedScenes() {
           >
             <!-- MEDIA -->
             <div class="w-full h-full relative">
-              <Transition name="preview-slide">
                 <SceneMedia
                   v-if="currentScene"
                   :key="currentScene.id"
@@ -649,8 +675,6 @@ async function deleteSelectedScenes() {
                   @requestNext="nextScene"
                   class="preview-slide-item absolute inset-0"
                 />
-              </Transition>
-
               <div
                 v-if="!currentScene"
                 class="preview-slide-item absolute inset-0 flex items-center justify-center text-xs text-slate-500"
@@ -822,7 +846,7 @@ async function deleteSelectedScenes() {
       <!-- TAB 2 – SZENEN -->
       <div
         v-if="activeTab === 'scenes'"
-        class="space-y-4 pb-2 flex flex-col h-[calc(100vh-140px)]"
+        class="space-y-4 pb-2 flex flex-col"
       >
         <!-- Header -->
         <div class="flex items-baseline justify-between gap-2">
