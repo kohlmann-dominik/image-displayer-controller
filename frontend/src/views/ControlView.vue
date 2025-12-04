@@ -25,6 +25,7 @@ const scenes = ref<Scene[]>([])
 const scenesLoading = ref(false)
 const scenesError = ref<string | null>(null)
 
+// Upload State
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -32,15 +33,11 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const totalUploadFiles = ref(0)
 const uploadedFilesCount = ref(0)
 
-const hasUploadProgress = computed(() => {
-  return uploading.value && totalUploadFiles.value > 0
-})
-
+// reine Text-Helfer für die Pill
 const uploadProgressText = computed(() => {
-  if (!hasUploadProgress.value) {
+  if (!uploading.value || totalUploadFiles.value === 0) {
     return ""
   }
-
   return `${uploadedFilesCount.value} / ${totalUploadFiles.value} Dateien hochgeladen`
 })
 
@@ -51,8 +48,6 @@ const showPreview = (scene: Scene) => {
 const closePreview = () => {
   previewScene.value = null
 }
-
-
 
 const selectedSceneIds = ref<Array<Scene["id"]>>([])
 const selectedCount = computed(() => selectedSceneIds.value.length)
@@ -276,11 +271,10 @@ function onThumbTouchStart(e: TouchEvent) {
   disableTransition.value = true
 }
 
-
 function onThumbTouchMove(e: TouchEvent) {
   const firstTouch = e.touches[0]
 
-  if (!dragging.value || !firstTouch || dragStartX.value === null) {
+  if (!dragging.value || !firstTouch) {
     return
   }
 
@@ -522,13 +516,7 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
   try {
     const fileArray = Array.from(files)
 
-    // Falls handleFileChange aus irgendeinem Grund nicht vorher aufgerufen wurde:
-    if (totalUploadFiles.value === 0) {
-      totalUploadFiles.value = fileArray.length
-      uploadedFilesCount.value = 0
-    }
-
-    const chunkSize = 15 // Anzahl Dateien pro Request (10–20 ist entspannt)
+    const chunkSize = 15 // Anzahl Dateien pro Request
 
     console.log("[upload] selected files:", fileArray.length)
 
@@ -544,7 +532,6 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
 
       const formData = new FormData()
       for (const file of chunk) {
-        // WICHTIG: Feldname muss zu backend upload.array(\"files\") passen
         formData.append("files", file)
       }
 
@@ -623,8 +610,8 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
     uploadError.value = "Upload fehlgeschlagen."
   } finally {
     uploading.value = false
-    totalUploadFiles.value = 0
     uploadedFilesCount.value = 0
+    totalUploadFiles.value = 0
   }
 }
 
@@ -1137,10 +1124,10 @@ async function deleteSelectedScenes() {
       </div>
     </div>
 
-    <!-- Upload-Toast unten -->
+       <!-- Upload-Toast unten -->
     <Teleport to="body">
       <div
-        v-if="hasUploadProgress"
+        v-if="uploading"
         class="fixed inset-x-0 bottom-4 z-[9500] flex justify-center px-4 pointer-events-none"
       >
         <div
