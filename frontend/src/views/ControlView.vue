@@ -29,6 +29,21 @@ const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
+const totalUploadFiles = ref(0)
+const uploadedFilesCount = ref(0)
+
+const hasUploadProgress = computed(() => {
+  return uploading.value && totalUploadFiles.value > 0
+})
+
+const uploadProgressText = computed(() => {
+  if (!hasUploadProgress.value) {
+    return ""
+  }
+
+  return `${uploadedFilesCount.value} / ${totalUploadFiles.value} Dateien hochgeladen`
+})
+
 const previewScene = ref<Scene | null>(null)
 const showPreview = (scene: Scene) => {
   previewScene.value = scene
@@ -488,6 +503,9 @@ function handleFileChange(e: Event): void {
     return
   }
 
+  totalUploadFiles.value = input.files.length
+  uploadedFilesCount.value = 0
+
   console.log("[upload] selected files:", input.files.length)
 
   void uploadFiles(input.files)
@@ -504,52 +522,60 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
   try {
     const fileArray = Array.from(files)
 
-    for (const file of fileArray) {
-      console.log("[upload] starting upload for:", file.name)
+    // Falls handleFileChange aus irgendeinem Grund nicht vorher aufgerufen wurde:
+    if (totalUploadFiles.value === 0) {
+      totalUploadFiles.value = fileArray.length
+      uploadedFilesCount.value = 0
+    }
+
+    const chunkSize = 15 // Anzahl Dateien pro Request (10–20 ist entspannt)
+
+    console.log("[upload] selected files:", fileArray.length)
+
+    for (let i = 0; i < fileArray.length; i += chunkSize) {
+      const chunk = fileArray.slice(i, i + chunkSize)
+      console.log(
+        "[upload] starting chunk",
+        i / chunkSize + 1,
+        "mit",
+        chunk.length,
+        "Dateien",
+      )
 
       const formData = new FormData()
-      formData.append("file", file)
+      for (const file of chunk) {
+        // WICHTIG: Feldname muss zu backend upload.array(\"files\") passen
+        formData.append("files", file)
+      }
 
       let response: Response
-
       try {
         response = await fetch(`${API_BASE}/api/scenes/upload`, {
           method: "POST",
           body: formData,
         })
       } catch (networkError: unknown) {
-        console.error("Network error while uploading", file.name, networkError)
+        console.error("Network error while uploading chunk", networkError)
         uploadError.value = "Netzwerkfehler beim Upload."
-        continue
+        break
       }
 
       if (!response.ok) {
-        console.error(
-          "Upload failed for",
-          file.name,
-          "status:",
-          response.status,
-        )
-        uploadError.value = `Upload fehlgeschlagen für ${file.name} (HTTP ${response.status}).`
-        continue
+        console.error("Upload failed for chunk, status:", response.status)
+        uploadError.value = `Upload fehlgeschlagen (HTTP ${response.status}).`
+        break
       }
 
       let payload: unknown
-
       try {
         payload = await response.json()
       } catch (parseError: unknown) {
-        console.error(
-          "Failed to parse response JSON for",
-          file.name,
-          parseError,
-        )
+        console.error("Failed to parse response JSON for chunk", parseError)
         uploadError.value = "Antwort vom Server konnte nicht gelesen werden."
-        continue
+        break
       }
 
       let createdScenes: Scene[] = []
-
       if (Array.isArray(payload)) {
         createdScenes = payload as Scene[]
       } else {
@@ -563,8 +589,7 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
       console.log(
         "[upload] server returned",
         createdScenes.length,
-        "scene(s) for",
-        file.name,
+        "scene(s) für chunk",
       )
 
       scenes.value.push(...createdScenes)
@@ -572,6 +597,12 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
       if (firstNewScene === null) {
         firstNewScene = createdScenes[0] ?? null
       }
+
+      // Fortschritt pro Datei erhöhen
+      uploadedFilesCount.value = Math.min(
+        totalUploadFiles.value,
+        uploadedFilesCount.value + chunk.length,
+      )
     }
 
     if (!hadScenesBefore && firstNewScene !== null) {
@@ -592,6 +623,8 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
     uploadError.value = "Upload fehlgeschlagen."
   } finally {
     uploading.value = false
+    totalUploadFiles.value = 0
+    uploadedFilesCount.value = 0
   }
 }
 
@@ -1104,6 +1137,27 @@ async function deleteSelectedScenes() {
       </div>
     </div>
 
+    <!-- Upload-Toast unten -->
+    <Teleport to="body">
+      <div
+        v-if="hasUploadProgress"
+        class="fixed inset-x-0 bottom-4 z-[9500] flex justify-center px-4 pointer-events-none"
+      >
+        <div
+          class="pointer-events-auto glass-panel-soft rounded-full px-4 py-2 flex items-center gap-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.3)] bg-white/90 border border-slate-200/80"
+        >
+          <span
+            class="inline-block w-3 h-3 rounded-full border-2 border-sky-400 border-t-transparent animate-spin"
+          ></span>
+          <span class="uppercase tracking-[0.16em] font-semibold">
+            Upload läuft
+          </span>
+          <span class="text-slate-600">
+            {{ uploadProgressText }}
+          </span>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- MODAL PREVIEW -->
     <Teleport to="body">
