@@ -15,6 +15,22 @@ const emit = defineEmits<{
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 
+const mediaClass = computed(() => {
+  if (props.mode === "control-preview") {
+    // Preview-Panel: Panel hat fixe Größe, Bild füllt Panel und darf croppen
+    return "w-full h-full object-contain"
+  }
+
+  if (props.mode === "modal-preview") {
+    // Modal: Bild soll möglichst vollständig sichtbar bleiben
+    return "max-h-[80vh] max-w-full h-auto w-auto object-contain"
+  }
+
+  // DISPLAY (Vollbild): Bild/Videos sollen in den Screen passen
+  return "w-full h-full object-contain"
+})
+
+
 const isVideo = computed(() => {
   if (!props.scene) {
     return false
@@ -160,12 +176,13 @@ function handleEnded() {
 </script>
 
 <template>
-  <!-- ACHTUNG: hier kein "props.mode", sondern direkt "mode" -->
   <div
     :class="[
       mode === 'display'
+        // DISPLAY → fullscreen mit schwarzem Hintergrund
         ? 'fixed inset-0 bg-black flex items-center justify-center'
-        : 'w-full h-full bg-black flex items-center justify-center'
+        // PREVIEW & MODAL → füllen einfach ihren Container
+        : 'w-full h-full flex items-center justify-center'
     ]"
   >
     <Transition :name="transitionName" mode="out-in">
@@ -178,7 +195,7 @@ function handleEnded() {
         <template v-if="scene.type === 'image'">
           <img
             :src="srcUrl"
-            class="w-full h-full object-contain"
+            :class="mediaClass"
             loading="lazy"
             decoding="async"
           />
@@ -189,7 +206,7 @@ function handleEnded() {
           <video
             ref="videoRef"
             :src="srcUrl"
-            class="w-full h-full object-contain"
+            :class="mediaClass"
             muted
             playsinline
             preload="auto"
@@ -209,3 +226,4 @@ function handleEnded() {
     </Transition>
   </div>
 </template>
+

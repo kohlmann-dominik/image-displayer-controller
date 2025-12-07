@@ -725,27 +725,20 @@ async function deleteSelectedScenes() {
 
           <!-- Preview-Panel -->
           <div
-            class="glass-panel-soft w-full rounded-[32px] overflow-hidden flex items-center justify-center h-[340px] sm:h-[370px]"
-          >
-            <!-- MEDIA -->
-            <div class="w-full h-full relative">
-              <SceneMedia
-                v-if="currentScene"
-                :key="currentScene.id"
-                :scene="currentScene"
-                mode="control-preview"
-                :play-videos-full-length="!!state?.playVideosFullLength"
-                @requestNext="nextScene"
-                class="preview-slide-item absolute inset-0"
-              />
-              <div
-                v-if="!currentScene"
-                class="preview-slide-item absolute inset-0 flex items-center justify-center text-xs text-slate-500"
-              >
-                Keine Szene ausgewählt
-              </div>
-            </div>
+          class="glass-panel-soft-modal w-full h-[340px] sm:h-[370px] rounded-[32px] overflow-hidden flex items-center justify-center"
+        >
+          <div class="relative w-full h-full flex items-center justify-center">
+            <SceneMedia
+              v-if="currentScene"
+              :scene="currentScene"
+              mode="control-preview"
+              :play-videos-full-length="!!state?.playVideosFullLength"
+              @requestNext="nextScene"
+              :key="currentScene.id"
+              class="absolute inset-0 flex items-center justify-center"
+            />
           </div>
+        </div>
 
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
           <div
@@ -1110,9 +1103,9 @@ async function deleteSelectedScenes() {
 
     <!-- Upload-Toast unten -->
     <Teleport to="body">
-      <div
+     <div
         v-if="uploading"
-        class="fixed inset-x-0 bottom-4 z-[9500] flex justify-center px-4 pointer-events-none"
+        class="fixed inset-x-0 bottom-20 z-[9500] flex justify-center px-4 pointer-events-none"
       >
         <div
           class="pointer-events-auto glass-panel-soft rounded-full px-4 py-2 flex items-center gap-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.3)] bg-white/90 border border-slate-200/80"
@@ -1135,13 +1128,13 @@ async function deleteSelectedScenes() {
       <Transition name="modal-fade">
         <div
           v-if="previewScene"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl px-4"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-transparent backdrop-blur-md px-4"
           @click.self="closePreview"
         >
           <div class="w-full max-w-3xl">
             <div class="flex items-center justify-center">
               <div
-                class="glass-panel-soft relative w-full h-[80vh] rounded-[32px] overflow-hidden flex items-center justify-center"
+                class="glass-panel-soft-modal relative w-full h-[80vh] rounded-[32px] overflow-hidden flex items-center justify-center"
               >
                 <!-- Header / Titel + Close -->
                 <div

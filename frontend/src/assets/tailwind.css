@@ -63,7 +63,23 @@ body {
   backdrop-filter: blur(26px) saturate(1.45);
 }
 
-/* ===== STRONG PANEL – Preview / Modal ===== */
+/* ===== LPreview / Modal ===== */
+
+glass-panel-soft-modal {
+  /* keine sichtbare Fläche mehr */
+  background-color: transparent;
+
+  /* Border wirklich komplett aus */
+  border: none !important;
+
+  /* nur noch ein weicher Glow */
+  box-shadow:
+    0 18px 40px rgba(148, 163, 184, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
 
 .glass-panel-strong {
   /* Stil angelehnt an den Upload-Button (glass-pill-primary), aber neutral weiß */
