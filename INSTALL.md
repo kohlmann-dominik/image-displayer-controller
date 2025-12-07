@@ -286,6 +286,7 @@ sudo systemctl status imagedisplayer
 
 ---
 ## Teil 8 – Änderungen aktualisieren / neu deployen
+
 ## 8.1 Firewall (UFW) kurz deaktivieren (falls Internet geblockt ist)
 sudo ufw disable
 
