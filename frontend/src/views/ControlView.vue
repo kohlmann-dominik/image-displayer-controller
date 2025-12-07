@@ -195,7 +195,7 @@ function updateSlotWidth() {
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragOffsetX = ref(0)
-const dragThreshold = 80
+const dragThreshold = 60
 
 // Transition-Flag (während Drag keine CSS-Transition)
 const disableTransition = ref(false)
@@ -277,47 +277,47 @@ function onThumbTouchMove(e: TouchEvent) {
   }
 
   const currentX = firstTouch.clientX
-  dragOffsetX.value = currentX - dragStartX.value
+  const rawOffset = currentX - dragStartX.value
+
+  const width = slotWidth.value || 0
+  let limitedOffset = rawOffset
+
+  if (width > 0) {
+    const max = width * 0.6
+    if (limitedOffset > max) {
+      limitedOffset = max
+    } else if (limitedOffset < -max) {
+      limitedOffset = -max
+    }
+  }
+
+  dragOffsetX.value = limitedOffset
 }
+
 
 function onThumbTouchEnd() {
   if (!dragging.value) {
     return
   }
 
+  dragging.value = false
+
   const delta = dragOffsetX.value
   const canGoPrev = currentThumbPage.value > 0
   const canGoNext = currentThumbPage.value < totalThumbPages.value - 1
 
-  let direction: "prev" | "next" | "none" = "none"
+  // Ab hier wieder mit Transition animieren
+  disableTransition.value = false
 
   if (delta > dragThreshold && canGoPrev) {
-    direction = "prev"
-  } else if (delta < -dragThreshold && canGoNext) {
-    direction = "next"
-  }
-
-  dragging.value = false
-
-  if (direction === "none") {
-    disableTransition.value = false
-    dragOffsetX.value = 0
-    return
-  }
-
-  if (direction === "next" && canGoNext) {
-    currentThumbPage.value += 1
-  } else if (direction === "prev" && canGoPrev) {
     currentThumbPage.value -= 1
+  } else if (delta < -dragThreshold && canGoNext) {
+    currentThumbPage.value += 1
   }
 
-  disableTransition.value = true
   dragOffsetX.value = 0
-
-  nextTick(() => {
-    disableTransition.value = false
-  })
 }
+
 
 const playVideosFullLength = computed<boolean>({
   get() {
