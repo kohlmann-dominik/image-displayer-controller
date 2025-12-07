@@ -90,7 +90,6 @@ function pickNextTransition() {
 }
 
 const transitionName = computed(() => {
-  // Für Preview/Modal bleibt es immer ein weicher Fade
   if (props.mode === "display") {
     return currentTransition.value
   }
@@ -125,12 +124,10 @@ function setupVideo() {
 watch(
   () => props.scene?.id,
   (newId, oldId) => {
-    // Transition wählen, wenn Szene wechselt
     if (newId !== oldId) {
       pickNextTransition()
     }
 
-    // Video neu starten, falls nötig
     if (!isVideo.value) {
       return
     }
@@ -163,8 +160,14 @@ function handleEnded() {
 </script>
 
 <template>
-  <!-- füllt immer den Screen, egal in welcher Orientation -->
-  <div class="fixed inset-0 bg-black flex items-center justify-center">
+  <!-- ACHTUNG: hier kein "props.mode", sondern direkt "mode" -->
+  <div
+    :class="[
+      mode === 'display'
+        ? 'fixed inset-0 bg-black flex items-center justify-center'
+        : 'w-full h-full bg-black flex items-center justify-center'
+    ]"
+  >
     <Transition :name="transitionName" mode="out-in">
       <div
         v-if="scene"
@@ -192,7 +195,7 @@ function handleEnded() {
             preload="auto"
             autoplay
             @ended="handleEnded"
-          ></video>
+          />
         </template>
       </div>
 
