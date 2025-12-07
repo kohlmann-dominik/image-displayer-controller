@@ -65,12 +65,12 @@ body {
 
 /* ===== LPreview / Modal ===== */
 
-glass-panel-soft-modal {
+.glass-panel-soft-modal {
   /* keine sichtbare Fläche mehr */
   background-color: transparent;
 
   /* Border wirklich komplett aus */
-  border: none !important;
+  border: none;
 
   /* nur noch ein weicher Glow */
   box-shadow:
