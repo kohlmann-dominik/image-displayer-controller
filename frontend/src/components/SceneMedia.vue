@@ -37,9 +37,27 @@ const srcUrl = computed(() => {
   return `${API_BASE}${url}`
 })
 
-type TransitionName = "scene-fade" | "scene-slide" | "scene-zoom" | "scene-pan"
+type TransitionName =
+  | "scene-fade"
+  | "scene-slide"
+  | "scene-zoom"
+  | "scene-pan"
+  | "scene-blur"
+  | "scene-rotate"
+  | "scene-kenburns"
+  | "scene-pop"
 
-const availableTransitions: TransitionName[] = ["scene-fade", "scene-slide", "scene-zoom", "scene-pan"]
+const availableTransitions: TransitionName[] = [
+  "scene-fade",
+  "scene-slide",
+  "scene-zoom",
+  "scene-pan",
+  "scene-blur",
+  "scene-rotate",
+  "scene-kenburns",
+  "scene-pop",
+]
+
 const currentTransition = ref<TransitionName>("scene-fade")
 
 function pickNextTransition() {
@@ -55,13 +73,13 @@ function pickNextTransition() {
   }
 
   const previous = currentTransition.value
-  let next = availableTransitions[Math.floor(Math.random() * availableTransitions.length)]
+  let next = availableTransitions[Math.floor(Math.random() * availableTransitions.length)]  ?? "scene-fade"
 
   if (next === previous && availableTransitions.length > 1) {
     const index = availableTransitions.indexOf(next)
     if (index >= 0) {
       const altIndex = (index + 1) % availableTransitions.length
-      next = availableTransitions[altIndex]
+      next = availableTransitions[altIndex]  ?? "scene-fade"
     }
   }
 

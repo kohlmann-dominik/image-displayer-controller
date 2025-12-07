@@ -439,11 +439,22 @@ body {
 .scene-zoom-enter-active,
 .scene-zoom-leave-active,
 .scene-pan-enter-active,
-.scene-pan-leave-active {
+.scene-pan-leave-active,
+.scene-blur-enter-active,
+.scene-blur-leave-active,
+.scene-rotate-enter-active,
+.scene-rotate-leave-active,
+.scene-kenburns-enter-active,
+.scene-kenburns-leave-active,
+.scene-pop-enter-active,
+.scene-pop-leave-active,
+.scene-circle-enter-active,
+.scene-circle-leave-active {
   transition:
     opacity 650ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 650ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: opacity, transform;
+    transform 650ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    filter 650ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform, filter;
 }
 
 /* Fade – sehr soft, fast wie jetzt */
@@ -524,4 +535,62 @@ body {
 .scene-pan-leave-to {
   opacity: 0;
   transform: translateY(-28px) scale(0.99);
+}
+
+/* Blur-Fade – weiches Rein-/Rausblenden mit Unschärfe */
+
+.scene-blur-enter-from,
+.scene-blur-leave-to {
+  opacity: 0;
+  filter: blur(12px);
+  transform: scale(1.01);
+}
+
+.scene-blur-enter-to,
+.scene-blur-leave-from {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* Rotate – leichter Kameraschwenk */
+
+.scene-rotate-enter-from,
+.scene-rotate-leave-to {
+  opacity: 0;
+  transform: scale(1.02) rotate(3deg);
+}
+
+.scene-rotate-enter-to,
+.scene-rotate-leave-from {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* Ken Burns – langsames Reinzoomen & Pan, wirkt besonders bei Fotos gut */
+
+.scene-kenburns-enter-from,
+.scene-kenburns-leave-to {
+  opacity: 0;
+  transform: scale(1.08) translate3d(14px, 14px, 0);
+}
+
+.scene-kenburns-enter-to,
+.scene-kenburns-leave-from {
+  opacity: 1;
+  transform: scale(1) translate3d(0, 0, 0);
+}
+
+/* Pop – kleiner Scale-Pop, fühlt sich "snappy" an */
+
+.scene-pop-enter-from,
+.scene-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.93);
+}
+
+.scene-pop-enter-to,
+.scene-pop-leave-from {
+  opacity: 1;
+  transform: scale(1);
 }
