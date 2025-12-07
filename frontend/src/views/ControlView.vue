@@ -25,9 +25,21 @@ const scenes = ref<Scene[]>([])
 const scenesLoading = ref(false)
 const scenesError = ref<string | null>(null)
 
+// Upload State
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+const totalUploadFiles = ref(0)
+const uploadedFilesCount = ref(0)
+
+// reine Text-Helfer für die Pill
+const uploadProgressText = computed(() => {
+  if (!uploading.value || totalUploadFiles.value === 0) {
+    return ""
+  }
+  return `${uploadedFilesCount.value} / ${totalUploadFiles.value} Dateien hochgeladen`
+})
 
 const previewScene = ref<Scene | null>(null)
 const showPreview = (scene: Scene) => {
@@ -36,8 +48,6 @@ const showPreview = (scene: Scene) => {
 const closePreview = () => {
   previewScene.value = null
 }
-
-
 
 const selectedSceneIds = ref<Array<Scene["id"]>>([])
 const selectedCount = computed(() => selectedSceneIds.value.length)
@@ -256,16 +266,13 @@ function onThumbTouchStart(e: TouchEvent) {
   dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
 
-  // Während des aktiven Drags keine CSS-Transition,
-  // damit die Bewegung 1:1 dem Finger folgt.
   disableTransition.value = true
 }
-
 
 function onThumbTouchMove(e: TouchEvent) {
   const firstTouch = e.touches[0]
 
-  if (!dragging.value || !firstTouch || dragStartX.value === null) {
+  if (!dragging.value || !firstTouch) {
     return
   }
 
@@ -293,20 +300,17 @@ function onThumbTouchEnd() {
   dragging.value = false
 
   if (direction === "none") {
-    // Zu kleiner Swipe → sanft zurück zur Mitte
     disableTransition.value = false
     dragOffsetX.value = 0
     return
   }
 
-  // Gültiger Swipe: Seite umschalten
   if (direction === "next" && canGoNext) {
     currentThumbPage.value += 1
   } else if (direction === "prev" && canGoPrev) {
     currentThumbPage.value -= 1
   }
 
-  // Direkt auf die neue Seite springen, ohne zweite Animation
   disableTransition.value = true
   dragOffsetX.value = 0
 
@@ -336,18 +340,14 @@ watch(
       Math.max(0, s.transitionMs ?? 5000),
     )
 
-    // Initial Sync beim ersten State vom Backend
     if (!initLoaded.value) {
       localMode.value = s.mode
       localDurationMs.value = nextTransition
       initLoaded.value = true
-      // direkt beim ersten State einen Timer setzen
       scheduleNextByTimer()
       return
     }
 
-    // Falls sich Werte im Backend später ändern (z.B. anderer Client),
-    // folgen die lokalen Controls automatisch.
     if (s.transitionMs !== prev?.transitionMs) {
       localDurationMs.value = nextTransition
     }
@@ -416,7 +416,6 @@ function togglePlay() {
   })
 }
 
-// Manuelles "Weiter" – jetzt über computeNextScene (Modus wird beachtet)
 function nextScene() {
   if (!state.value) {
     return
@@ -431,7 +430,6 @@ function nextScene() {
   })
 }
 
-// Manuelles "Zurück" – weiterhin lokal (ist ok)
 function prevScene() {
   if (!state.value || !visibleScenes.value.length) {
     return
@@ -488,6 +486,9 @@ function handleFileChange(e: Event): void {
     return
   }
 
+  totalUploadFiles.value = input.files.length
+  uploadedFilesCount.value = 0
+
   console.log("[upload] selected files:", input.files.length)
 
   void uploadFiles(input.files)
@@ -504,52 +505,53 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
   try {
     const fileArray = Array.from(files)
 
-    for (const file of fileArray) {
-      console.log("[upload] starting upload for:", file.name)
+    const chunkSize = 15
+
+    console.log("[upload] selected files:", fileArray.length)
+
+    for (let i = 0; i < fileArray.length; i += chunkSize) {
+      const chunk = fileArray.slice(i, i + chunkSize)
+      console.log(
+        "[upload] starting chunk",
+        i / chunkSize + 1,
+        "mit",
+        chunk.length,
+        "Dateien",
+      )
 
       const formData = new FormData()
-      formData.append("file", file)
+      for (const file of chunk) {
+        formData.append("files", file)
+      }
 
       let response: Response
-
       try {
         response = await fetch(`${API_BASE}/api/scenes/upload`, {
           method: "POST",
           body: formData,
         })
       } catch (networkError: unknown) {
-        console.error("Network error while uploading", file.name, networkError)
+        console.error("Network error while uploading chunk", networkError)
         uploadError.value = "Netzwerkfehler beim Upload."
-        continue
+        break
       }
 
       if (!response.ok) {
-        console.error(
-          "Upload failed for",
-          file.name,
-          "status:",
-          response.status,
-        )
-        uploadError.value = `Upload fehlgeschlagen für ${file.name} (HTTP ${response.status}).`
-        continue
+        console.error("Upload failed for chunk, status:", response.status)
+        uploadError.value = `Upload fehlgeschlagen (HTTP ${response.status}).`
+        break
       }
 
       let payload: unknown
-
       try {
         payload = await response.json()
       } catch (parseError: unknown) {
-        console.error(
-          "Failed to parse response JSON for",
-          file.name,
-          parseError,
-        )
+        console.error("Failed to parse response JSON for chunk", parseError)
         uploadError.value = "Antwort vom Server konnte nicht gelesen werden."
-        continue
+        break
       }
 
       let createdScenes: Scene[] = []
-
       if (Array.isArray(payload)) {
         createdScenes = payload as Scene[]
       } else {
@@ -563,8 +565,7 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
       console.log(
         "[upload] server returned",
         createdScenes.length,
-        "scene(s) for",
-        file.name,
+        "scene(s) für chunk",
       )
 
       scenes.value.push(...createdScenes)
@@ -572,6 +573,11 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
       if (firstNewScene === null) {
         firstNewScene = createdScenes[0] ?? null
       }
+
+      uploadedFilesCount.value = Math.min(
+        totalUploadFiles.value,
+        uploadedFilesCount.value + chunk.length,
+      )
     }
 
     if (!hadScenesBefore && firstNewScene !== null) {
@@ -592,6 +598,8 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
     uploadError.value = "Upload fehlgeschlagen."
   } finally {
     uploading.value = false
+    uploadedFilesCount.value = 0
+    totalUploadFiles.value = 0
   }
 }
 
@@ -721,15 +729,15 @@ async function deleteSelectedScenes() {
           >
             <!-- MEDIA -->
             <div class="w-full h-full relative">
-                <SceneMedia
-                  v-if="currentScene"
-                  :key="currentScene.id"
-                  :scene="currentScene"
-                  mode="control-preview"
-                  :play-videos-full-length="!!state?.playVideosFullLength"
-                  @requestNext="nextScene"
-                  class="preview-slide-item absolute inset-0"
-                />
+              <SceneMedia
+                v-if="currentScene"
+                :key="currentScene.id"
+                :scene="currentScene"
+                mode="control-preview"
+                :play-videos-full-length="!!state?.playVideosFullLength"
+                @requestNext="nextScene"
+                class="preview-slide-item absolute inset-0"
+              />
               <div
                 v-if="!currentScene"
                 class="preview-slide-item absolute inset-0 flex items-center justify-center text-xs text-slate-500"
@@ -767,7 +775,6 @@ async function deleteSelectedScenes() {
               aria-label="Play/Pause"
             >
               <template v-if="state?.isPlaying">
-                <!-- Pause icon -->
                 <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                   <rect
                     x="6"
@@ -788,7 +795,6 @@ async function deleteSelectedScenes() {
                 </svg>
               </template>
               <template v-else>
-                <!-- Play icon -->
                 <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                   <path d="M8 5l11 7-11 7z" fill="currentColor" />
                 </svg>
@@ -871,7 +877,6 @@ async function deleteSelectedScenes() {
                 }"
               />
             </div>
-
 
             <div class="mt-5 flex items-center justify-between gap-3">
               <span
@@ -958,7 +963,6 @@ async function deleteSelectedScenes() {
                       scene.visible === false ? 'opacity-35 grayscale' : 'opacity-100'
                     ]"
                   >
-                    <!-- innerer Wrapper: Bild + blauer Rahmen -->
                     <div
                       :class="[
                         'overflow-hidden glass-thumb',
@@ -1104,50 +1108,73 @@ async function deleteSelectedScenes() {
       </div>
     </div>
 
+    <!-- Upload-Toast unten -->
+    <Teleport to="body">
+      <div
+        v-if="uploading"
+        class="fixed inset-x-0 bottom-4 z-[9500] flex justify-center px-4 pointer-events-none"
+      >
+        <div
+          class="pointer-events-auto glass-panel-soft rounded-full px-4 py-2 flex items-center gap-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.3)] bg-white/90 border border-slate-200/80"
+        >
+          <span
+            class="inline-block w-3 h-3 rounded-full border-2 border-sky-400 border-t-transparent animate-spin"
+          ></span>
+          <span class="uppercase tracking-[0.16em] font-semibold">
+            Upload läuft
+          </span>
+          <span class="text-slate-600">
+            {{ uploadProgressText }}
+          </span>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- MODAL PREVIEW -->
     <Teleport to="body">
-      <div
-        v-if="previewScene"
-        class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl px-4"
-        @click.self="closePreview"
-      >
-        <div class="w-full max-w-3xl">
-          <div class="flex items-center justify-center max-h-[80vh]">
-            <div
-              class="glass-panel-soft relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
-            >
+      <Transition name="modal-fade">
+        <div
+          v-if="previewScene"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl px-4"
+          @click.self="closePreview"
+        >
+          <div class="w-full max-w-3xl">
+            <div class="flex items-center justify-center max-h-[80vh]">
               <div
-                class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
+                class="glass-panel-soft relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
               >
-                <span
-                  class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+                <div
+                  class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
                 >
-                  {{
-                    previewScene?.title ||
-                    previewScene?.id?.toString() ||
-                    "Preview"
-                  }}
-                </span>
+                  <span
+                    class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+                  >
+                    {{
+                      previewScene?.title ||
+                      previewScene?.id?.toString() ||
+                      "Preview"
+                    }}
+                  </span>
 
-                <button
-                  class="w-9 h-9 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
-                  @click.stop="closePreview"
-                >
-                  ✕
-                </button>
+                  <button
+                    class="w-9 h-9 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+                    @click.stop="closePreview"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <SceneMedia
+                  :scene="previewScene"
+                  mode="modal-preview"
+                  :play-videos-full-length="!!state?.playVideosFullLength"
+                  @requestNext="nextScene"
+                />
               </div>
-
-              <SceneMedia
-                :scene="previewScene"
-                mode="modal-preview"
-                :play-videos-full-length="!!state?.playVideosFullLength"
-                @requestNext="nextScene"
-              />
             </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

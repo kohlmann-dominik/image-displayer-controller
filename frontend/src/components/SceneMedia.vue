@@ -15,7 +15,13 @@ const emit = defineEmits<{
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 
-const isVideo = computed(() => props.scene?.type === "video")
+const isVideo = computed(() => {
+  if (!props.scene) {
+    return false
+  }
+
+  return props.scene.type === "video"
+})
 
 const srcUrl = computed(() => {
   if (!props.scene || !props.scene.url) {
@@ -29,6 +35,54 @@ const srcUrl = computed(() => {
   }
 
   return `${API_BASE}${url}`
+})
+
+type TransitionName = "scene-fade" | "scene-slide" | "scene-zoom" | "scene-pan"
+
+const availableTransitions: TransitionName[] = ["scene-fade", "scene-slide", "scene-zoom", "scene-pan"]
+const currentTransition = ref<TransitionName>("scene-fade")
+
+function pickNextTransition() {
+  // Nur im Display-Modus randomisieren, Preview/Modal bleiben bei Fade
+  if (props.mode !== "display") {
+    currentTransition.value = "scene-fade"
+    return
+  }
+
+  if (availableTransitions.length === 0) {
+    currentTransition.value = "scene-fade"
+    return
+  }
+
+  const previous = currentTransition.value
+  let next = availableTransitions[Math.floor(Math.random() * availableTransitions.length)]
+
+  if (next === previous && availableTransitions.length > 1) {
+    const index = availableTransitions.indexOf(next)
+    if (index >= 0) {
+      const altIndex = (index + 1) % availableTransitions.length
+      next = availableTransitions[altIndex]
+    }
+  }
+
+  currentTransition.value = next
+}
+
+const transitionName = computed(() => {
+  // Für Preview/Modal bleibt es immer ein weicher Fade
+  if (props.mode === "display") {
+    return currentTransition.value
+  }
+
+  return "scene-fade"
+})
+
+const sceneKey = computed(() => {
+  if (!props.scene) {
+    return "empty"
+  }
+
+  return `${props.scene.id ?? "scene"}-${transitionName.value}`
 })
 
 function setupVideo() {
@@ -49,7 +103,13 @@ function setupVideo() {
 
 watch(
   () => props.scene?.id,
-  () => {
+  (newId, oldId) => {
+    // Transition wählen, wenn Szene wechselt
+    if (newId !== oldId) {
+      pickNextTransition()
+    }
+
+    // Video neu starten, falls nötig
     if (!isVideo.value) {
       return
     }
@@ -61,6 +121,8 @@ watch(
 )
 
 onMounted(() => {
+  pickNextTransition()
+
   if (isVideo.value) {
     setupVideo()
   }
@@ -81,35 +143,44 @@ function handleEnded() {
 
 <template>
   <div class="w-full h-full bg-black flex items-center justify-center">
-    <template v-if="scene">
-      <!-- IMAGE -->
-      <template v-if="scene.type === 'image'">
-        <img
-          :src="srcUrl"
-          class="w-full h-full object-contain"
-          loading="lazy"
-          decoding="async"
-        />
-      </template>
+    <Transition :name="transitionName" mode="out-in">
+      <div
+        v-if="scene"
+        :key="sceneKey"
+        class="w-full h-full flex items-center justify-center"
+      >
+        <!-- IMAGE -->
+        <template v-if="scene.type === 'image'">
+          <img
+            :src="srcUrl"
+            class="w-full h-full object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        </template>
 
-      <!-- VIDEO -->
-      <template v-else>
-        <video
-          ref="videoRef"
-          :src="srcUrl"
-          class="w-full h-full object-contain"
-          muted
-          playsinline
-          preload="auto"
-          @ended="handleEnded"
-        ></video>
-      </template>
-    </template>
+        <!-- VIDEO -->
+        <template v-else>
+          <video
+            ref="videoRef"
+            :src="srcUrl"
+            class="w-full h-full object-contain"
+            muted
+            playsinline
+            preload="auto"
+            autoplay="true"
+            @ended="handleEnded"
+          ></video>
+        </template>
+      </div>
 
-    <template v-else>
-      <div class="text-white/60 text-sm">
+      <div
+        v-else
+        key="empty"
+        class="text-white/60 text-sm"
+      >
         Keine Szene ausgewählt
       </div>
-    </template>
+    </Transition>
   </div>
 </template>

@@ -400,11 +400,128 @@ body {
   border-radius: 9999px;
   background: radial-gradient(
     circle at 50% 0%,
-    rgba(148, 163, 184, 0.18), /* helleres, neutrales Grau */
+    rgba(148, 163, 184, 0.18),
     transparent 60%
   );
-  opacity: 0.45;              /* deutlich weniger Deckkraft */
+  opacity: 0.45;
   filter: blur(24px);
   z-index: -1;
   pointer-events: none;
+}
+
+/* ===== Modal-Fade-Transition ===== */
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition:
+    opacity 160ms ease-out,
+    transform 180ms ease-out;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* === Display-Transitions für SceneMedia === */
+
+.scene-fade-enter-active,
+.scene-fade-leave-active,
+.scene-slide-enter-active,
+.scene-slide-leave-active,
+.scene-zoom-enter-active,
+.scene-zoom-leave-active,
+.scene-pan-enter-active,
+.scene-pan-leave-active {
+  transition:
+    opacity 650ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 650ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+/* Fade – sehr soft, fast wie jetzt */
+
+.scene-fade-enter-from,
+.scene-fade-leave-to {
+  opacity: 0;
+  transform: scale(1.01);
+}
+
+.scene-fade-enter-to,
+.scene-fade-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Slide – leicht von rechts nach links */
+
+.scene-slide-enter-from {
+  opacity: 0;
+  transform: translateX(40px) scale(1.02);
+}
+
+.scene-slide-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.scene-slide-leave-from {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.scene-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-40px) scale(0.98);
+}
+
+/* Zoom – kleiner "Ken-Burns"-Effekt */
+
+.scene-zoom-enter-from {
+  opacity: 0;
+  transform: scale(1.06);
+}
+
+.scene-zoom-enter-to {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scene-zoom-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scene-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+/* Pan – ganz leichtes vertikales Rein-/Rausfahren */
+
+.scene-pan-enter-from {
+  opacity: 0;
+  transform: translateY(28px) scale(1.01);
+}
+
+.scene-pan-enter-to {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.scene-pan-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.scene-pan-leave-to {
+  opacity: 0;
+  transform: translateY(-28px) scale(0.99);
 }
