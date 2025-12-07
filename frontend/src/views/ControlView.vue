@@ -753,8 +753,8 @@ async function deleteSelectedScenes() {
           >
             <template v-if="state?.isPlaying">
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" />
-                <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" />
+                <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
+                <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
               </svg>
             </template>
             <template v-else>

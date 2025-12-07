@@ -212,6 +212,87 @@ let state: PlayerState = {
   playVideosFullLength: false,
 }
 
+// Hilfsfunktionen für sichtbare Szenen
+function getVisibleScenes(): SceneModel[] {
+  return scenes.filter((s) => s.visible ?? true)
+}
+
+function computeNextScene(): SceneModel | null {
+  const visibleScenes = getVisibleScenes()
+  if (!visibleScenes.length) {
+    return null
+  }
+
+  const currentId = state.currentSceneId
+  const currentIndex = visibleScenes.findIndex((s) => s.id === currentId)
+
+  if (state.mode === "random") {
+    if (visibleScenes.length === 1) {
+      return visibleScenes[0]
+    }
+
+    let idx = currentIndex
+    while (idx === currentIndex || idx === -1) {
+      idx = Math.floor(Math.random() * visibleScenes.length)
+    }
+    return visibleScenes[idx] ?? null
+  }
+
+  // sequential
+  if (currentIndex === -1) {
+    return visibleScenes[0] ?? null
+  }
+  const nextIndex =
+    currentIndex === visibleScenes.length - 1 ? 0 : currentIndex + 1
+  return visibleScenes[nextIndex] ?? null
+}
+
+// --- globaler Rotationstimer im Backend ---
+let rotationTimer: NodeJS.Timeout | null = null
+
+function clearRotationTimer() {
+  if (rotationTimer) {
+    clearTimeout(rotationTimer)
+    rotationTimer = null
+  }
+}
+
+function scheduleRotation() {
+  clearRotationTimer()
+
+  // Nur laufen, wenn wirklich "Play" aktiv ist
+  if (!state.isPlaying) {
+    return
+  }
+
+  // Wenn aktuelle Szene ein Video ist und "volle Länge" aktiv → kein Timer,
+  // der Wechsel kommt dann über NEXT_SCENE vom Frontend (onended)
+  const currentScene =
+    state.currentSceneId != null
+      ? scenes.find((s) => s.id === state.currentSceneId) ?? null
+      : null
+
+  if (
+    currentScene &&
+    currentScene.type === "video" &&
+    state.playVideosFullLength
+  ) {
+    return
+  }
+
+  const baseMs = state.transitionMs ?? 5000
+  const ms = Math.min(10000, Math.max(500, baseMs))
+
+  rotationTimer = setTimeout(() => {
+    const next = computeNextScene()
+    if (next) {
+      setCurrentScene(next.id)
+    }
+    // danach wieder neu planen, solange isPlaying true ist
+    scheduleRotation()
+  }, ms)
+}
+
 function broadcastState() {
   const payload = JSON.stringify({
     type: "STATE_UPDATE",
@@ -227,6 +308,8 @@ function broadcastState() {
 function setCurrentScene(id: number | null) {
   state = { ...state, currentSceneId: id }
   broadcastState()
+  // bei jeder Änderung der Szene Timer neu planen
+  scheduleRotation()
 }
 
 wss.on("connection", (ws) => {
@@ -243,9 +326,10 @@ wss.on("connection", (ws) => {
       console.log("[ws] message from client:", msg)
 
       switch (msg.type) {
-        case "SET_STATE": {
+          case "SET_STATE": {
           state = { ...state, ...(msg.payload || {}) }
           broadcastState()
+          scheduleRotation()
           break
         }
         case "SET_SCENE": {
@@ -256,25 +340,10 @@ wss.on("connection", (ws) => {
           break
         }
         case "NEXT_SCENE": {
-          const visibleScenes = scenes.filter((s) => s.visible ?? true)
-          if (!visibleScenes.length) {
-            break
+          const nextScene = computeNextScene()
+          if (nextScene) {
+            setCurrentScene(nextScene.id)
           }
-          const currentId = state.currentSceneId
-          const idx = visibleScenes.findIndex((s) => s.id === currentId)
-          let nextScene: SceneModel
-
-          if (state.mode === "random") {
-            const randomIndex = Math.floor(
-              Math.random() * visibleScenes.length,
-            )
-            nextScene = visibleScenes[randomIndex]
-          } else {
-            const nextIndex =
-              idx === -1 || idx === visibleScenes.length - 1 ? 0 : idx + 1
-            nextScene = visibleScenes[nextIndex]
-          }
-          setCurrentScene(nextScene.id)
           break
         }
       }
