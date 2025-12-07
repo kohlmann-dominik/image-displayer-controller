@@ -1130,7 +1130,7 @@ async function deleteSelectedScenes() {
       </div>
     </Teleport>
 
-    <!-- MODAL PREVIEW -->
+   <!-- MODAL PREVIEW -->
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
@@ -1139,10 +1139,11 @@ async function deleteSelectedScenes() {
           @click.self="closePreview"
         >
           <div class="w-full max-w-3xl">
-            <div class="flex items-center justify-center max-h-[80vh]">
+            <div class="flex items-center justify-center">
               <div
-                class="glass-panel-soft relative w-full rounded-[32px] overflow-hidden flex items-center justify-center"
+                class="glass-panel-soft relative w-full h-[80vh] rounded-[32px] overflow-hidden flex items-center justify-center"
               >
+                <!-- Header / Titel + Close -->
                 <div
                   class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
                 >
@@ -1164,6 +1165,7 @@ async function deleteSelectedScenes() {
                   </button>
                 </div>
 
+                <!-- Inhalt -->
                 <SceneMedia
                   :scene="previewScene"
                   mode="modal-preview"
