@@ -28,3 +28,6 @@ dist-ssr
 backend/public/images/**
 !backend/public/images/.gitkeep
 !backend/public/images/thumbnails/.gitkeep
+
+# Scenes.json ignorieren, da keine scenes mit ausgespielt werden, datei wird beim upload automatisch erezeugt
+backend/data/scenes.json

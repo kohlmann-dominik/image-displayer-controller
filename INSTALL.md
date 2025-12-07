@@ -285,6 +285,46 @@ sudo systemctl status imagedisplayer
 ```
 
 ---
+## Teil 8 – Änderungen aktualisieren / neu deployen
+## 8.1 Firewall (UFW) kurz deaktivieren (falls Internet geblockt ist)
+sudo ufw disable
+
+## 8.2 Neueste Version von GitHub holen
+cd ~/projects/imagedisplayer
+git pull origin main
+
+## 8.3 Backend neu builden & Service neu starten
+cd ~/projects/imagedisplayer/backend
+
+# Nur nötig, wenn sich Dependencies geändert haben:
+npm install
+
+# TypeScript → JavaScript builden
+npm run build
+
+# systemd-Service neu starten
+sudo systemctl restart imagedisplayer
+
+# Status prüfen
+sudo systemctl status imagedisplayer
+
+## 8.4 Frontend neu builden & nach /var/www deployen
+cd ~/projects/imagedisplayer/frontend
+
+# Nur nötig, wenn sich Dependencies geändert haben:
+npm install
+
+# Production-Build erzeugen
+npm run build
+
+# Build nach /var/www synchronisieren
+sudo rsync -av --delete dist/ /var/www/imagedisplayer-frontend/
+
+# Nginx neu laden
+sudo systemctl reload nginx
+
+## 8.5 Firewall wieder aktivieren (wenn gewünscht)
+sudo ufw enable
 
 ## ✅ Fertig!
 
