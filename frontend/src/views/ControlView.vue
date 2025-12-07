@@ -666,7 +666,7 @@ async function deleteSelectedScenes() {
     <div class="w-full max-w-md mx-auto space-y-4">
       <!-- TAB HEADERS -->
       <div
-        class="grid grid-cols-2 bg-white/40 backdrop-blur-xl p-1 rounded-2xl shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
+        class="grid grid-cols-2 bg-white/40 backdrop-blur-xs p-1 rounded-2xl shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
       >
         <button
           class="py-2 rounded-xl text-sm font-semibold transition"
@@ -725,7 +725,7 @@ async function deleteSelectedScenes() {
 
           <!-- Preview-Panel -->
           <div
-          class="glass-panel-soft-modal w-full h-[340px] sm:h-[370px] rounded-[32px] overflow-hidden flex items-center justify-center"
+          class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[32px] overflow-hidden flex items-center justify-center"
         >
           <div class="relative w-full h-full flex items-center justify-center">
             <SceneMedia
@@ -741,69 +741,57 @@ async function deleteSelectedScenes() {
         </div>
 
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
-          <div
-            class="mt-4 flex items-center justify-center gap-3 glass-float-row"
+          <div class="mt-4 flex items-center justify-center gap-3">
+          <!-- PREVIOUS -->
+          <button
+            @click.stop="prevScene"
+            aria-label="Vorherige Szene"
+            class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
+                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
+                  transition hover:bg-white/20 active:scale-95"
           >
-            <button
-              @click.stop="prevScene"
-              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-lg"
-              aria-label="Vorherige Szene"
-            >
-              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                <rect
-                  x="5"
-                  y="5"
-                  width="2"
-                  height="14"
-                  rx="0.5"
-                  fill="currentColor"
-                />
-                <path d="M17 5L9 12l8 7z" fill="currentColor" />
-              </svg>
-            </button>
+            <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+              <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
+              <path d="M17 5L9 12l8 7z" fill="currentColor" />
+            </svg>
+          </button>
 
-            <button
-              @click.stop="togglePlay"
-              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-xl"
-              aria-label="Play/Pause"
-            >
-              <template v-if="state?.isPlaying">
-                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                  <rect
-                    x="6"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="14"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                </svg>
-              </template>
-              <template v-else>
-                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                  <path d="M8 5l11 7-11 7z" fill="currentColor" />
-                </svg>
-              </template>
-            </button>
-
-            <button
-              @click.stop="nextScene"
-              class="glass-pill-btn glass-pill-neutral w-11 h-11 text-slate-800 text-lg"
-              aria-label="Nächste Szene"
-            >
+          <!-- PLAY / PAUSE -->
+          <button
+            @click.stop="togglePlay"
+            aria-label="Play/Pause"
+            class="w-11 h-11 rounded-full border border-white/80 bg-white/30  text-zinc-100 
+                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
+                  transition hover:bg-white/20 active:scale-95"
+          >
+            <template v-if="state?.isPlaying">
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
+                <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" />
+                <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" />
               </svg>
-            </button>
-          </div>
+            </template>
+            <template v-else>
+              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                <path d="M8 5l11 7-11 7z" fill="currentColor" />
+              </svg>
+            </template>
+          </button>
+
+          <!-- NEXT -->
+          <button
+            @click.stop="nextScene"
+            aria-label="Nächste Szene"
+            class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
+                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
+                  transition hover:bg-white/20 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+              <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+
+
         </div>
 
         <!-- SETTINGS PANEL -->
@@ -929,16 +917,6 @@ async function deleteSelectedScenes() {
             @touchmove.prevent.stop="onThumbTouchMove"
             @touchend.stop="onThumbTouchEnd"
           >
-            <!-- Prev button (Desktop only) -->
-            <button
-              type="button"
-              class="hidden md:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/85 border border-white/80 shadow text-slate-700 text-lg opacity-0 group-hover:opacity-100 transition disabled:opacity-30 disabled:cursor-default"
-              @click.stop="goToPrevThumbPage"
-              :disabled="currentThumbPage === 0"
-            >
-              ‹
-            </button>
-
             <!-- Track mit Seiten -->
             <div class="flex" :style="trackStyle">
               <div
@@ -995,7 +973,7 @@ async function deleteSelectedScenes() {
                       type="button"
                       @click.stop="toggleSceneSelected(scene)"
                       :class="[
-                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center text-[14px] z-20 cursor-pointer transition active:scale-95',
+                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-xs flex items-center justify-center text-[14px] z-20 cursor-pointer transition active:scale-95',
                         isSceneSelected(scene)
                           ? 'bg-sky-400 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
                           : 'bg-white/70 border border-slate-300/85 text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80'
@@ -1052,16 +1030,6 @@ async function deleteSelectedScenes() {
                 </div>
               </div>
             </div>
-
-            <!-- Next button (Desktop only) -->
-            <button
-              type="button"
-              class="hidden md:flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-8 h-8 rounded-full bg-white/85 border border-white/80 shadow text-slate-700 text-lg opacity-0 group-hover:opacity-100 transition disabled:opacity-30 disabled:cursor-default"
-              @click.stop="goToNextThumbPage"
-              :disabled="currentThumbPage >= totalThumbPages - 1"
-            >
-              ›
-            </button>
           </div>
 
           <div
@@ -1128,48 +1096,45 @@ async function deleteSelectedScenes() {
       <Transition name="modal-fade">
         <div
           v-if="previewScene"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-transparent backdrop-blur-md px-4"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/30 backdrop-blur-xs px-4"
           @click.self="closePreview"
         >
-          <div class="w-full max-w-3xl">
-            <div class="flex items-center justify-center">
-              <div
-                class="glass-panel-soft-modal relative w-full h-[80vh] rounded-[32px] overflow-hidden flex items-center justify-center"
+          <div
+            class="relative w-full h-full flex items-center justify-center"
+          >
+            <!-- Bild/Video mit Rahmen direkt am Media-Element -->
+            <SceneMedia
+              :scene="previewScene"
+              mode="modal-preview"
+              :play-videos-full-length="!!state?.playVideosFullLength"
+              @requestNext="nextScene"
+            />
+
+            <!-- Header (Titel + Close) als Overlay ÜBER dem Bild -->
+            <div
+              class="absolute inset-x-6 top-6 flex items-start justify-between gap-3 pointer-events-none"
+            >
+              <span
+                class="max-w-[70%] truncate rounded-full bg-white/75 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition pointer-events-auto"
               >
-                <!-- Header / Titel + Close -->
-                <div
-                  class="absolute inset-x-4 top-3 flex items-start justify-between gap-3 z-10"
-                >
-                  <span
-                    class="max-w-[70%] truncate rounded-full bg-white/70 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
-                  >
-                    {{
-                      previewScene?.title ||
-                      previewScene?.id?.toString() ||
-                      "Preview"
-                    }}
-                  </span>
+                {{
+                  previewScene?.title ||
+                  previewScene?.id?.toString() ||
+                  "Preview"
+                }}
+              </span>
 
-                  <button
-                    class="w-9 h-9 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
-                    @click.stop="closePreview"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <!-- Inhalt -->
-                <SceneMedia
-                  :scene="previewScene"
-                  mode="modal-preview"
-                  :play-videos-full-length="!!state?.playVideosFullLength"
-                  @requestNext="nextScene"
-                />
-              </div>
+              <button
+                class="w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto active:scale-95 transition"
+                @click.stop="closePreview"
+              >
+                ✕
+              </button>
             </div>
           </div>
         </div>
       </Transition>
     </Teleport>
+
   </div>
 </template>

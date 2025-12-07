@@ -23,7 +23,7 @@ const mediaClass = computed(() => {
 
   if (props.mode === "modal-preview") {
     // Modal: Bild soll möglichst vollständig sichtbar bleiben
-    return "max-h-[80vh] max-w-full h-auto w-auto object-contain"
+    return "modal-media-frame max-h-[80vh] max-w-full h-auto w-auto object-contain"
   }
 
   // DISPLAY (Vollbild): Bild/Videos sollen in den Screen passen

@@ -63,22 +63,25 @@ body {
   backdrop-filter: blur(26px) saturate(1.45);
 }
 
-/* ===== LPreview / Modal ===== */
+/* ===== Preview / Modal ===== */
 
-.glass-panel-soft-modal {
+.glass-panel-soft-preview {
   /* keine sichtbare Fläche mehr */
   background-color: transparent;
 
-  /* Border wirklich komplett aus */
   border: none;
 
-  /* nur noch ein weicher Glow */
   box-shadow:
-    0 18px 40px rgba(148, 163, 184, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.15);
+    /* äußerer, eher weißer Glow statt dunklem Schatten */
+    0 20px 54px rgba(255, 255, 255, 0.85);
+}
 
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+.modal-media-frame {
+  border-radius: 32px;
+  overflow: hidden;
+  /* Weißer, glasiger Rahmen direkt ums Bild */
+    box-shadow:
+    0 20px 54px rgba(255, 255, 255, 0.85);
 }
 
 .glass-panel-strong {
@@ -176,7 +179,7 @@ body {
   align-items: center;
   justify-content: center;
 
-  color: #0f172a;
+  color: #0e121a;
   transition:
     transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
     box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1);
