@@ -73,13 +73,16 @@ function pickNextTransition() {
   }
 
   const previous = currentTransition.value
-  let next = availableTransitions[Math.floor(Math.random() * availableTransitions.length)]  ?? "scene-fade"
+  let next =
+    availableTransitions[
+      Math.floor(Math.random() * availableTransitions.length)
+    ] ?? "scene-fade"
 
   if (next === previous && availableTransitions.length > 1) {
     const index = availableTransitions.indexOf(next)
     if (index >= 0) {
       const altIndex = (index + 1) % availableTransitions.length
-      next = availableTransitions[altIndex]  ?? "scene-fade"
+      next = availableTransitions[altIndex] ?? "scene-fade"
     }
   }
 
@@ -160,7 +163,8 @@ function handleEnded() {
 </script>
 
 <template>
-  <div class="w-full h-full bg-black flex items-center justify-center">
+  <!-- füllt immer den Screen, egal in welcher Orientation -->
+  <div class="fixed inset-0 bg-black flex items-center justify-center">
     <Transition :name="transitionName" mode="out-in">
       <div
         v-if="scene"
@@ -186,7 +190,7 @@ function handleEnded() {
             muted
             playsinline
             preload="auto"
-            autoplay="true"
+            autoplay
             @ended="handleEnded"
           ></video>
         </template>

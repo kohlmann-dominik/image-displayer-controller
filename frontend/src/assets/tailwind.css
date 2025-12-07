@@ -12,7 +12,13 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
   background-color: #000000;
+}
+
+#app {
+  min-height: 100dvh;
+  min-width: 100dvw;
 }
 
 /* Hintergrund für die ControlView – helles macOS-Blau, ohne dunkle Töne */
