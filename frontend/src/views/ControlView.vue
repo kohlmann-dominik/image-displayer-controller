@@ -243,19 +243,6 @@ watch(activeTab, (val) => {
   }
 })
 
-// --- Pagination / Swipe-Logik ---
-function goToPrevThumbPage() {
-  if (currentThumbPage.value > 0) {
-    currentThumbPage.value -= 1
-  }
-}
-
-function goToNextThumbPage() {
-  if (currentThumbPage.value < totalThumbPages.value - 1) {
-    currentThumbPage.value += 1
-  }
-}
-
 function onThumbTouchStart(e: TouchEvent) {
   const firstTouch = e.touches[0]
   if (!firstTouch) {
@@ -725,7 +712,7 @@ async function deleteSelectedScenes() {
 
           <!-- Preview-Panel -->
           <div
-          class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[32px] overflow-hidden flex items-center justify-center"
+          class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
         >
           <div class="relative w-full h-full flex items-center justify-center">
             <SceneMedia
@@ -891,11 +878,11 @@ async function deleteSelectedScenes() {
       >
         <!-- Header -->
         <div class="flex items-baseline justify-between gap-2">
-          <span class="text-[11px] uppercase tracking-[0.22em] text-slate-700">
+          <span class="text-[11px] uppercase tracking-[0.22em] text-white">
             Szenen
           </span>
           <div class="flex items-center gap-2">
-            <span class="text-[11px] text-slate-700">
+            <span class="text-[11px] text-white">
               {{ visibleCount }} sichtbar von {{ scenes.length }}
             </span>
             <button
@@ -1033,7 +1020,7 @@ async function deleteSelectedScenes() {
           </div>
 
           <div
-            class="mt-1 flex items-center justify-center gap-2 text-[10px] text-slate-600"
+            class="mt-1 flex items-center justify-center gap-2 text-[10px] text-white"
           >
             Seite {{ currentThumbPage + 1 }} / {{ totalThumbPages }}
           </div>
