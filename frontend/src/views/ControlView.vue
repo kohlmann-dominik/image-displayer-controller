@@ -805,18 +805,17 @@ async function deleteSelectedScenes() {
                     :key="scene.id"
                     @click="toggleSceneActive(scene)"
                     :class="[
-                      'relative rounded-[24px] cursor-pointer transition',
+                      'relative cursor-pointer transition',
                       scene.visible === false ? 'opacity-35 grayscale' : 'opacity-100'
                     ]"
                   >
                     <div
-                     :class="[
-                      // Preview-Style + Thumbnail-Rahmen
-                      'glass-panel-soft-preview glass-thumb rounded-[24px]',
-                      scene.id === state?.currentSceneId
-                        ? 'ring-2 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
-                        : ''
-                    ]"
+                      :class="[
+                        'relative rounded-[24px] overflow-hidden glass-thumb glass-panel-soft-preview',
+                        scene.id === state?.currentSceneId
+                          ? 'ring-2 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
+                          : ''
+                      ]"
                     >
                       <div class="w-full h-[170px] sm:h-[185px]">
                         <template v-if="scene.thumbnailUrl">
