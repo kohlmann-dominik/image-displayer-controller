@@ -167,7 +167,7 @@ function scheduleNextByTimer() {
 }
 
 // ===============================
-// Pagination + Touch-Swipe (vereinfachte, smooth Variante)
+// Pagination mit nativen Swipe + Scroll-Snap
 // ===============================
 const thumbPageSize = 6
 const currentThumbPage = ref(0)
@@ -180,33 +180,7 @@ const totalThumbPages = computed(() => {
   return Math.ceil(total / thumbPageSize)
 })
 
-// sichtbarer Bereich zum Messen der Breite
 const thumbOuter = ref<HTMLElement | null>(null)
-const slotWidth = ref(0)
-
-function updateSlotWidth() {
-  if (thumbOuter.value) {
-    slotWidth.value = thumbOuter.value.clientWidth
-  }
-}
-
-// Live-Swipe-State
-const dragging = ref(false)
-const dragStartX = ref(0)
-const dragOffsetX = ref(0)
-const dragThreshold = 0.18
-
-// kontrolliert, ob CSS-Transition aktiv ist
-const enableSwipeTransition = ref(false)
-
-// Snap-Zustand
-const snapping = ref(false)
-const pendingPage = ref<number | null>(null)
-
-
-// Swipe-Config
-const SWIPE_DURATION_MS = 300
-const SWIPE_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)"
 
 // Seiten als Array von Scene-Arrays
 const pages = computed(() => {
@@ -222,153 +196,57 @@ const pages = computed(() => {
   return res
 })
 
-// Stil für den Track
-const trackStyle = computed(() => {
-  const width = slotWidth.value || 0
-  const baseOffset = -currentThumbPage.value * width
-  const totalOffset = baseOffset + dragOffsetX.value
-
-  return {
-    transform: `translate3d(${totalOffset}px, 0, 0)`,
-    transition: enableSwipeTransition.value
-      ? `transform ${SWIPE_DURATION_MS}ms ${SWIPE_EASING}`
-      : "none",
+// Scroll → aktuelle Seite ermitteln
+function onThumbScroll() {
+  const el = thumbOuter.value
+  if (!el) {
+    return
   }
-})
 
+  const width = el.clientWidth || 1
+  const pageFloat = el.scrollLeft / width
+  const page = Math.round(pageFloat)
 
+  const clamped = Math.min(
+    Math.max(page, 0),
+    totalThumbPages.value - 1,
+  )
+
+  currentThumbPage.value = clamped
+}
+
+// JS-seitig zu einer Seite springen (z. B. nach Resize / Tab-Wechsel)
+function syncThumbScroll() {
+  const el = thumbOuter.value
+  if (!el) {
+    return
+  }
+
+  const width = el.clientWidth || 0
+  const targetLeft = currentThumbPage.value * width
+  el.scrollLeft = targetLeft
+}
+
+// Wenn Szenen sich ändern → aktuelle Seite clampen & Scroll korrigieren
 watch(scenes, () => {
   const maxPage = Math.max(0, totalThumbPages.value - 1)
   if (currentThumbPage.value > maxPage) {
     currentThumbPage.value = maxPage
   }
+  syncThumbScroll()
 })
 
+// Beim Wechsel auf den Szenen-Tab → Scroll positionieren
 watch(activeTab, (val) => {
   if (val === "scenes") {
     nextTick(() => {
-      updateSlotWidth()
+      syncThumbScroll()
     })
   }
 })
 
-function onThumbTouchStart(e: TouchEvent) {
-  const firstTouch = e.touches[0]
-  if (!firstTouch) {
-    return
-  }
-
-  snapping.value = false
-  pendingPage.value = null
-
-  dragging.value = true
-  dragStartX.value = firstTouch.clientX
-  dragOffsetX.value = 0
-
-  enableSwipeTransition.value = false
-}
-
-
-function onThumbTouchMove(e: TouchEvent) {
-  const firstTouch = e.touches[0]
-  if (!dragging.value || !firstTouch) {
-    return
-  }
-
-  const currentX = firstTouch.clientX
-  const rawOffset = currentX - dragStartX.value
-
-  const width = slotWidth.value || 0
-  let limitedOffset = rawOffset
-
-  if (width > 0) {
-    const max = width * 0.6
-    if (limitedOffset > max) {
-      limitedOffset = max
-    } else if (limitedOffset < -max) {
-      limitedOffset = -max
-    }
-  }
-
-  dragOffsetX.value = limitedOffset
-}
-
-function onThumbTouchEnd() {
-  if (!dragging.value) {
-    return
-  }
-
-  dragging.value = false
-
-  const width = slotWidth.value || 0
-  const delta = dragOffsetX.value
-
-  const canGoPrev = currentThumbPage.value > 0
-  const canGoNext = currentThumbPage.value < totalThumbPages.value - 1
-
-  const pxThreshold = width * dragThreshold
-
-  let targetPage = currentThumbPage.value
-  let animateToOffset = 0
-
-  if (width > 0 && Math.abs(delta) > pxThreshold) {
-    if (delta < 0 && canGoNext) {
-      targetPage = currentThumbPage.value + 1
-      animateToOffset = -width
-    } else if (delta > 0 && canGoPrev) {
-      targetPage = currentThumbPage.value - 1
-      animateToOffset = width
-    }
-  }
-
-  // 1. Transition erstmal sicher aus
-  enableSwipeTransition.value = false
-
-  if (targetPage !== currentThumbPage.value) {
-    snapping.value = true
-    pendingPage.value = targetPage
-
-    const finalOffset = animateToOffset
-
-    // 2. Nächster Frame: Transition aktivieren + Ziel-Offset setzen
-    requestAnimationFrame(() => {
-      enableSwipeTransition.value = true
-      dragOffsetX.value = finalOffset
-    })
-  } else {
-    snapping.value = false
-    pendingPage.value = null
-
-    const finalOffset = 0
-
-    requestAnimationFrame(() => {
-      enableSwipeTransition.value = true
-      dragOffsetX.value = finalOffset
-    })
-  }
-}
-
-function onThumbTransitionEnd(e: TransitionEvent) {
-  if (e.propertyName !== "transform") {
-    return
-  }
-
-  if (e.target !== e.currentTarget) {
-    return
-  }
-
-  const width = slotWidth.value || 0
-
-  if (snapping.value && pendingPage.value != null && width > 0) {
-    currentThumbPage.value = pendingPage.value
-  }
-
-  snapping.value = false
-  pendingPage.value = null
-
-  // Nach der Animation wieder im "Drag-Start"-Zustand:
-  enableSwipeTransition.value = false
-  dragOffsetX.value = 0
+function onResize() {
+  syncThumbScroll()
 }
 
 // ===============================
@@ -432,13 +310,13 @@ onMounted(() => {
   })
   loadScenes()
   nextTick(() => {
-    updateSlotWidth()
-    window.addEventListener("resize", updateSlotWidth)
+    window.addEventListener("resize", onResize)
+    syncThumbScroll()
   })
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateSlotWidth)
+  window.removeEventListener("resize", onResize)
   clearTimer()
   if (unsubscribe) {
     unsubscribe()
@@ -839,7 +717,7 @@ async function deleteSelectedScenes() {
                 Modus
               </span>
 
-              <div
+            <div
                 class="flex rounded-full bg-white/90 border border-slate-200/60 p-1 text-[11px]"
               >
                 <button
@@ -947,21 +825,15 @@ async function deleteSelectedScenes() {
         <div class="flex-1 min-h-0 overflow-y-hidden px-1 pt-1 pb-1">
           <div
             ref="thumbOuter"
-            class="relative group overflow-hidden thumb-swipe-area"
-            @touchstart.stop="onThumbTouchStart"
-            @touchmove.prevent.stop="onThumbTouchMove"
-            @touchend.stop="onThumbTouchEnd"
+            class="relative group thumb-swipe-area overflow-x-auto overflow-y-hidden snap-x snap-mandatory"
+            @scroll.passive="onThumbScroll"
           >
             <!-- Track mit Seiten -->
-            <div
-              class="flex thumb-track"
-              :style="trackStyle"
-              @transitionend="onThumbTransitionEnd"
-            >
+            <div class="flex thumb-track">
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
-                class="w-full flex-shrink-0"
+                class="w-full flex-shrink-0 snap-start"
               >
                 <div class="grid grid-cols-2 gap-3 p-1">
                   <div
