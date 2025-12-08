@@ -408,8 +408,9 @@ body {
 }
 
 .thumb-swipe-area {
-  touch-action: pan-y;
+  touch-action: pan-y pan-x;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; /* für iOS smooth scrolling */
 }
 
 .thumb-track {
