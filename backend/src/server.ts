@@ -5,19 +5,14 @@ import WebSocket, { WebSocketServer } from "ws"
 import path from "path"
 import fs from "fs"
 import multer from "multer"
-import sharp from "sharp"
-import { execFile } from "child_process"
-import { promisify } from "util"
 
 import {
   scenes,
-  addScene,
+  addSceneFromFilename,
   removeScene,
   updateScene,
   Scene as SceneModel,
 } from "./scenes"
-
-const execFileAsync = promisify(execFile)
 
 const app = express()
 const server = http.createServer(app)
@@ -72,7 +67,7 @@ interface PlayerState {
 }
 
 // ===================
-// THUMBNAIL-HELPER
+// HILFSFUNKTIONEN
 // ===================
 
 function getThumbnailPath(scene: SceneModel): string {
@@ -80,102 +75,16 @@ function getThumbnailPath(scene: SceneModel): string {
   return path.join(thumbDir, `${baseName}.jpg`)
 }
 
-function getThumbnailUrl(scene: SceneModel): string {
-  const baseName = path.parse(scene.filename).name
-  return `/images/thumbnails/${baseName}.jpg`
-}
-
 function isRealFile(p: string): boolean {
   try {
-    return fs.existsSync(p) && fs.statSync(p).isFile()
+    if (!fs.existsSync(p)) {
+      return false
+    }
+
+    return fs.statSync(p).isFile()
   } catch {
     return false
   }
-}
-
-async function createImageThumbnail(scene: SceneModel): Promise<boolean> {
-  const src = path.join(imagesDir, scene.filename)
-  const dst = getThumbnailPath(scene)
-
-  if (!isRealFile(src)) {
-    console.warn("[thumbs] Quelle ist keine Datei (image):", src)
-    return false
-  }
-
-  try {
-    await sharp(src)
-      .rotate() // EXIF-Orientation fixen
-      .resize(480, 360, { fit: "cover" })
-      .jpeg({ quality: 80 })
-      .toFile(dst)
-
-    return true
-  } catch (err) {
-    console.error("[thumbs] Fehler bei Image-Thumbnail:", err)
-    return false
-  }
-}
-
-async function createVideoThumbnail(scene: SceneModel): Promise<boolean> {
-  const src = path.join(imagesDir, scene.filename)
-  const dst = getThumbnailPath(scene)
-
-  if (!isRealFile(src)) {
-    console.warn("[thumbs] Quelle ist keine Datei (video):", src)
-    return false
-  }
-
-  try {
-    await execFileAsync("ffmpeg", [
-      "-y",
-      "-ss",
-      "00:00:01",
-      "-i",
-      src,
-      "-frames:v",
-      "1",
-      "-vf",
-      "scale=480:360:force_original_aspect_ratio=decrease",
-      dst,
-    ])
-    return true
-  } catch (err) {
-    console.error("[thumbs] Fehler bei Video-Thumbnail:", err)
-    return false
-  }
-}
-
-async function ensureThumbnail(scene: SceneModel): Promise<void> {
-  const thumbPath = getThumbnailPath(scene)
-
-  if (isRealFile(thumbPath)) {
-    scene.thumbnailUrl = getThumbnailUrl(scene)
-    return
-  }
-
-  let ok = false
-  if (scene.type === "image") {
-    ok = await createImageThumbnail(scene)
-  } else if (scene.type === "video") {
-    ok = await createVideoThumbnail(scene)
-  }
-
-  if (ok) {
-    scene.thumbnailUrl = getThumbnailUrl(scene)
-  }
-}
-
-async function initThumbnails() {
-  let withThumb = 0
-  for (const scene of scenes) {
-    await ensureThumbnail(scene)
-    if (scene.thumbnailUrl) {
-      withThumb++
-    }
-  }
-  console.log(
-    `[server] Thumbnails initialisiert (${scenes.length} Szenen, ${withThumb} mit Thumbnail)`,
-  )
 }
 
 // ===================
@@ -184,10 +93,10 @@ async function initThumbnails() {
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => {
+    destination: (_req, _file, cb) => {
       cb(null, imagesDir)
     },
-    filename: (req, file, cb) => {
+    filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname)
       const base = path.basename(file.originalname, ext)
       const safeBase = base.replace(/[^a-zA-Z0-9_\-]/g, "_")
@@ -200,6 +109,7 @@ const upload = multer({
     fileSize: 1024 * 1024 * 1024 * 2,
   },
 })
+
 // ===================
 // PLAYER STATE + WS
 // ===================
@@ -214,12 +124,18 @@ let state: PlayerState = {
 
 // Hilfsfunktionen für sichtbare Szenen
 function getVisibleScenes(): SceneModel[] {
-  return scenes.filter((s) => s.visible ?? true)
+  return scenes.filter((s) => {
+    if (typeof s.visible === "boolean") {
+      return s.visible
+    }
+
+    return true
+  })
 }
 
 function computeNextScene(): SceneModel | null {
   const visibleScenes = getVisibleScenes()
-  if (!visibleScenes.length) {
+  if (visibleScenes.length === 0) {
     return null
   }
 
@@ -235,13 +151,19 @@ function computeNextScene(): SceneModel | null {
     while (idx === currentIndex || idx === -1) {
       idx = Math.floor(Math.random() * visibleScenes.length)
     }
-    return visibleScenes[idx] ?? null
+
+    if (idx < 0 || idx >= visibleScenes.length) {
+      return null
+    }
+
+    return visibleScenes[idx]
   }
 
   // sequential
   if (currentIndex === -1) {
     return visibleScenes[0] ?? null
   }
+
   const nextIndex =
     currentIndex === visibleScenes.length - 1 ? 0 : currentIndex + 1
   return visibleScenes[nextIndex] ?? null
@@ -251,7 +173,7 @@ function computeNextScene(): SceneModel | null {
 let rotationTimer: NodeJS.Timeout | null = null
 
 function clearRotationTimer() {
-  if (rotationTimer) {
+  if (rotationTimer !== null) {
     clearTimeout(rotationTimer)
     rotationTimer = null
   }
@@ -273,7 +195,7 @@ function scheduleRotation() {
       : null
 
   if (
-    currentScene &&
+    currentScene !== null &&
     currentScene.type === "video" &&
     state.playVideosFullLength
   ) {
@@ -285,9 +207,10 @@ function scheduleRotation() {
 
   rotationTimer = setTimeout(() => {
     const next = computeNextScene()
-    if (next) {
+    if (next !== null) {
       setCurrentScene(next.id)
     }
+
     // danach wieder neu planen, solange isPlaying true ist
     scheduleRotation()
   }, ms)
@@ -298,6 +221,7 @@ function broadcastState() {
     type: "STATE_UPDATE",
     payload: state,
   })
+
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(payload)
@@ -326,7 +250,7 @@ wss.on("connection", (ws) => {
       console.log("[ws] message from client:", msg)
 
       switch (msg.type) {
-          case "SET_STATE": {
+        case "SET_STATE": {
           state = { ...state, ...(msg.payload || {}) }
           broadcastState()
           scheduleRotation()
@@ -341,7 +265,7 @@ wss.on("connection", (ws) => {
         }
         case "NEXT_SCENE": {
           const nextScene = computeNextScene()
-          if (nextScene) {
+          if (nextScene !== null) {
             setCurrentScene(nextScene.id)
           }
           break
@@ -366,7 +290,7 @@ wss.on("connection", (ws) => {
 function sceneToResponse(scene: SceneModel) {
   return {
     ...scene,
-    // komplette Medien-URL für Frontend (SceneMedia.vue erwartet vermutlich scene.url)
+    // komplette Medien-URL für Frontend (SceneMedia.vue erwartet scene.url)
     url: `/images/${scene.filename}`,
   }
 }
@@ -376,7 +300,7 @@ function sceneToResponse(scene: SceneModel) {
 // ===================
 
 // Szenen-Liste
-app.get("/api/scenes", (req: Request, res: Response) => {
+app.get("/api/scenes", (_req: Request, res: Response) => {
   res.json(scenes.map(sceneToResponse))
 })
 
@@ -410,27 +334,27 @@ app.post(
           file.size,
         )
 
-        const lower = file.filename.toLowerCase()
-        const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(lower)
+        // Thumbnail + Scene anlegen (zentral in scenes.ts + thumbnails.ts)
+        let scene = await addSceneFromFilename(file.filename)
 
-        const sceneInput: Omit<SceneModel, "id"> = {
-          filename: file.filename,
-          title: file.originalname,
-          description: "",
-          type: isVideo ? "video" : "image",
-          visible: true,
-          thumbnailUrl: undefined,
+        // Falls der Titel noch der technische Dateiname ist → auf Originalnamen setzen
+        if (!scene.title || scene.title === scene.filename) {
+          const updated = updateScene(scene.id, {
+            title: file.originalname,
+          })
+
+          if (updated !== null) {
+            scene = updated
+          }
         }
 
-        const newScene = addScene(sceneInput)
-        await ensureThumbnail(newScene)
-        created.push(newScene)
+        created.push(scene)
 
-        if (state.currentSceneId == null) {
-          setCurrentScene(newScene.id)
+        if (state.currentSceneId === null) {
+          setCurrentScene(scene.id)
         }
 
-        console.log("[upload] scene created with id:", newScene.id)
+        console.log("[upload] scene created with id:", scene.id)
       }
 
       // Für mehrere Dateien geben wir ein Array von Szenen zurück
@@ -441,8 +365,6 @@ app.post(
     }
   },
 )
-
-
 
 // Szene aktualisieren (z. B. visible)
 app.patch("/api/scenes/:id", async (req: Request, res: Response) => {
@@ -457,11 +379,8 @@ app.patch("/api/scenes/:id", async (req: Request, res: Response) => {
     return res.status(404).json({ error: "Scene nicht gefunden" })
   }
 
-  if (!updated.thumbnailUrl) {
-    await ensureThumbnail(updated)
-    saveScenes()
-  }
-
+  // Thumbnails werden zentral in scenes/thumbnails erzeugt,
+  // hier müssen wir nichts mehr nachpflegen.
   res.json(sceneToResponse(updated))
 })
 
@@ -481,12 +400,13 @@ app.delete("/api/scenes/:id", async (req: Request, res: Response) => {
   if (isRealFile(filePath)) {
     fs.unlinkSync(filePath)
   }
+
   const thumbPath = getThumbnailPath(removed)
   if (isRealFile(thumbPath)) {
     fs.unlinkSync(thumbPath)
   }
 
-  if (!scenes.length) {
+  if (scenes.length === 0) {
     state.currentSceneId = null
     broadcastState()
   }
@@ -495,23 +415,9 @@ app.delete("/api/scenes/:id", async (req: Request, res: Response) => {
 })
 
 // Root
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (_req: Request, res: Response) => {
   res.send("ImageDisplayer Backend läuft.")
 })
-
-// Szenen inkl. thumbnailUrl persistieren (optional)
-function saveScenes() {
-  try {
-    const dataFile = path.join(__dirname, "..", "data", "scenes.json")
-    const dir = path.dirname(dataFile)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
-    }
-    fs.writeFileSync(dataFile, JSON.stringify(scenes, null, 2), "utf8")
-  } catch (err) {
-    console.error("[server] Failed to save scenes.json:", err)
-  }
-}
 
 // ===================
 // START
@@ -519,9 +425,6 @@ function saveScenes() {
 
 const PORT = 4000
 
-;(async () => {
-  await initThumbnails()
-    server.listen(PORT, "0.0.0.0", () => {
-    console.log(`[server] listening on http://0.0.0.0:${PORT}`)
-  })
-})()
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`[server] listening on http://0.0.0.0:${PORT}`)
+})

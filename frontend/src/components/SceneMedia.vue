@@ -179,20 +179,17 @@ function handleEnded() {
   <div
     :class="[
       mode === 'display'
-        // DISPLAY → fullscreen mit schwarzem Hintergrund
         ? 'fixed inset-0 bg-black flex items-center justify-center'
-        // PREVIEW & MODAL → füllen einfach ihren Container
         : 'w-full h-full flex items-center justify-center'
     ]"
   >
-    <Transition :name="transitionName" mode="out-in">
-      <div
-        v-if="scene"
-        :key="sceneKey"
-        class="w-full h-full flex items-center justify-center"
-      >
+    <!-- ========================================================= -->
+    <!-- NO TRANSITION FOR CONTROL-PREVIEW                         -->
+    <!-- ========================================================= -->
+    <template v-if="mode === 'control-preview'">
+      <div class="w-full h-full flex items-center justify-center">
         <!-- IMAGE -->
-        <template v-if="scene.type === 'image'">
+        <template v-if="scene && scene.type === 'image'">
           <img
             :src="srcUrl"
             :class="mediaClass"
@@ -202,7 +199,7 @@ function handleEnded() {
         </template>
 
         <!-- VIDEO -->
-        <template v-else>
+        <template v-else-if="scene && scene.type === 'video'">
           <video
             ref="videoRef"
             :src="srcUrl"
@@ -214,16 +211,58 @@ function handleEnded() {
             @ended="handleEnded"
           />
         </template>
-      </div>
 
-      <div
-        v-else
-        key="empty"
-        class="text-white/60 text-sm"
-      >
-        Keine Szene ausgewählt
+        <template v-else>
+          <div class="text-white/60 text-sm">
+            Keine Szene ausgewählt
+          </div>
+        </template>
       </div>
-    </Transition>
+    </template>
+
+    <!-- ========================================================= -->
+    <!-- NORMAL TRANSITION FOR MODAL + DISPLAY                      -->
+    <!-- ========================================================= -->
+    <template v-else>
+      <Transition :name="transitionName" mode="out-in">
+        <div
+          v-if="scene"
+          :key="sceneKey"
+          class="w-full h-full flex items-center justify-center"
+        >
+          <!-- IMAGE -->
+          <template v-if="scene.type === 'image'">
+            <img
+              :src="srcUrl"
+              :class="mediaClass"
+              loading="lazy"
+              decoding="async"
+            />
+          </template>
+
+          <!-- VIDEO -->
+          <template v-else>
+            <video
+              ref="videoRef"
+              :src="srcUrl"
+              :class="mediaClass"
+              muted
+              playsinline
+              preload="auto"
+              autoplay
+              @ended="handleEnded"
+            />
+          </template>
+        </div>
+
+        <div
+          v-else
+          key="empty"
+          class="text-white/60 text-sm"
+        >
+          Keine Szene ausgewählt
+        </div>
+      </Transition>
+    </template>
   </div>
 </template>
-

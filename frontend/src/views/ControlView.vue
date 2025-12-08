@@ -710,8 +710,8 @@ async function deleteSelectedScenes() {
             </span>
           </div>
 
-          <!-- Preview-Panel -->
-          <div
+        <!-- Preview-Panel -->
+        <div
           class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
         >
           <div class="relative w-full h-full flex items-center justify-center">
@@ -721,11 +721,11 @@ async function deleteSelectedScenes() {
               mode="control-preview"
               :play-videos-full-length="!!state?.playVideosFullLength"
               @requestNext="nextScene"
-              :key="currentScene.id"
               class="absolute inset-0 flex items-center justify-center"
             />
           </div>
         </div>
+
 
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
           <div class="mt-4 flex items-center justify-center gap-3">
@@ -928,6 +928,7 @@ async function deleteSelectedScenes() {
                       ]"
                     >
                       <div class="w-full h-[170px] sm:h-[185px]">
+                        <!-- 1. Bevorzugt: Thumbnail (Image oder Video-Frame) -->
                         <template v-if="scene.thumbnailUrl">
                           <img
                             :src="API_BASE + scene.thumbnailUrl"
@@ -936,6 +937,8 @@ async function deleteSelectedScenes() {
                             class="w-full h-full object-cover"
                           />
                         </template>
+
+                        <!-- 2. Fallback: normales Bild -->
                         <template v-else-if="scene.type === 'image'">
                           <img
                             :src="API_BASE + scene.url"
@@ -944,6 +947,8 @@ async function deleteSelectedScenes() {
                             class="w-full h-full object-cover"
                           />
                         </template>
+
+                        <!-- 3. Fallback: Video ohne Autoplay, nur Poster/Standbild -->
                         <template v-else>
                           <video
                             :src="API_BASE + scene.url"

@@ -1,6 +1,8 @@
 // backend/src/scenes.ts
 import fs from "fs"
 import path from "path"
+import { generateThumbnail } from "./thumbnails"
+
 
 export interface Scene {
   id: number
@@ -130,46 +132,49 @@ function detectTypeFromFilename(filename: string): "image" | "video" {
 }
 
 // Scenes mit Dateisystem synchronisieren
-function internalSyncScenesWithFilesystem(): void {
+async function internalSyncScenesWithFilesystem(): Promise<void> {
   ensureImagesDir()
 
-  // Nur echte Dateien (keine Verzeichnisse) aus imagesDir holen
   const filesOnDisk = fs
     .readdirSync(imagesDir)
     .filter((f) => {
-      if (f.startsWith(".")) {
-        return false
-      }
-      const fullPath = path.join(imagesDir, f)
-      try {
-        return fs.statSync(fullPath).isFile()
-      } catch {
-        return false
-      }
+      if (f.startsWith(".")) return false
+      const full = path.join(imagesDir, f)
+      try { return fs.statSync(full).isFile() } catch { return false }
     })
 
   const fileSet = new Set(filesOnDisk)
-
-  // 1) Scenes entfernen, deren Dateien es nicht mehr gibt
   scenes = scenes.filter((s) => fileSet.has(s.filename))
 
-  // 2) Scenes für neue Dateien anlegen
   const knownFilenames = new Set(scenes.map((s) => s.filename))
   let nextId = getNextId()
 
   for (const file of filesOnDisk) {
     if (knownFilenames.has(file)) {
+      // Bestehendes thumbnail fixen, falls fehlt
+      const scene = scenes.find((s) => s.filename === file)!
+      if (!scene.thumbnailUrl) {
+        const fp = path.join(imagesDir, file)
+        scene.thumbnailUrl =
+          (await generateThumbnail(fp, scene.type === "video")) ?? undefined
+      }
       continue
     }
+
+    // Neue Szene
+    const fullPath = path.join(imagesDir, file)
+    const type = detectTypeFromFilename(file)
+
+    const thumb = await generateThumbnail(fullPath, type === "video")
 
     const scene: Scene = {
       id: nextId++,
       filename: file,
       title: file,
       description: "",
-      type: detectTypeFromFilename(file),
+      type,
       visible: true,
-      // thumbnailUrl wird im Server bei Bedarf zur Laufzeit gesetzt
+      thumbnailUrl: thumb ?? undefined,
     }
 
     scenes.push(scene)
@@ -182,15 +187,16 @@ function internalSyncScenesWithFilesystem(): void {
  * Optional von außen nutzbar, falls du nach vielen Änderungen
  * nochmal mit dem Dateisystem abgleichen willst.
  */
-export function syncScenesWithFilesystem(): void {
+export async function syncScenesWithFilesystem(): Promise<void> {
   internalSyncScenesWithFilesystem()
 }
 
 // Beim Start direkt einmal synchronisieren
-internalSyncScenesWithFilesystem()
+internalSyncScenesWithFilesystem().then(() => {
+  console.log("[scenes] Sync complete (with thumbnails).")
+})
 
 // --- API-Funktionen für server.ts ---
-
 export function addScene(input: Omit<Scene, "id">): Scene {
   const scene: Scene = {
     id: getNextId(),
@@ -205,7 +211,7 @@ export function addScene(input: Omit<Scene, "id">): Scene {
  * Helfer für Upload-Endpoints:
  * Legt (falls noch nicht vorhanden) eine Scene für eine hochgeladene Datei an.
  */
-export function addSceneFromFilename(filename: string): Scene {
+export async function addSceneFromFilename(filename: string): Promise<Scene> {
   ensureImagesDir()
 
   const existing = scenes.find((s) => s.filename === filename)
@@ -214,6 +220,10 @@ export function addSceneFromFilename(filename: string): Scene {
   }
 
   const type = detectTypeFromFilename(filename)
+  const fullPath = path.join(imagesDir, filename)
+
+  // Thumbnail erzeugen
+  const thumbnailUrl = await generateThumbnail(fullPath, type === "video")
 
   const scene: Scene = {
     id: getNextId(),
@@ -222,6 +232,7 @@ export function addSceneFromFilename(filename: string): Scene {
     description: "",
     type,
     visible: true,
+    thumbnailUrl: thumbnailUrl ?? undefined,
   }
 
   scenes.push(scene)
