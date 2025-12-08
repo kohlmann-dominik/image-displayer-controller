@@ -12,6 +12,8 @@ import { API_BASE } from "../config"
 import { connectWs, onStateChange, sendMessage } from "../ws"
 import SceneMedia from "../components/SceneMedia.vue"
 
+const SWIPE_DURATION_MS = 200 // oder 180 / 220 zum Testen
+const SWIPE_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)"
 const state = ref<PlayerState | null>(null)
 const initLoaded = ref(false)
 let unsubscribe: (() => void) | null = null
@@ -233,7 +235,7 @@ const trackStyle = computed(() => {
   return {
     transform: `translate3d(${totalOffset}px, 0, 0)`,
     transition: shouldAnimate
-      ? "transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)"
+      ? `transform ${SWIPE_DURATION_MS}ms ${SWIPE_EASING}`
       : "none",
   }
 })
@@ -294,6 +296,21 @@ function onThumbTouchMove(e: TouchEvent) {
   dragOffsetX.value = limitedOffset
 }
 
+function animateThumbTo(targetPage: number, offset: number) {
+  // Zielseite vormerken
+  snapping.value = true
+  pendingPage.value = targetPage
+
+  // Schritt 1: Aktuellen Stand ohne Transition rendern
+  isAnimating.value = false
+
+  // Schritt 2: Im nächsten Tick Transition aktivieren und Offset animieren
+  nextTick(() => {
+    isAnimating.value = true
+    dragOffsetX.value = offset
+  })
+}
+
 function onThumbTouchEnd() {
   if (!dragging.value) {
     return
@@ -324,18 +341,19 @@ function onThumbTouchEnd() {
     }
   }
 
-  // ab hier animieren (Transition an)
   if (targetPage !== currentThumbPage.value) {
-    snapping.value = true
-    pendingPage.value = targetPage
-    isAnimating.value = true
-    dragOffsetX.value = animateToOffset
+    // Seitenwechsel mit Wipe-Animation
+    animateThumbTo(targetPage, animateToOffset)
   } else {
-    // nur zurücksnappen
+    // nur zurück zur Ausgangsposition wipen
     snapping.value = false
     pendingPage.value = null
-    isAnimating.value = true
-    dragOffsetX.value = 0
+
+    isAnimating.value = false
+    nextTick(() => {
+      isAnimating.value = true
+      dragOffsetX.value = 0
+    })
   }
 }
 
