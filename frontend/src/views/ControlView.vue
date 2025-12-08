@@ -12,7 +12,7 @@ import { API_BASE } from "../config"
 import { connectWs, onStateChange, sendMessage } from "../ws"
 import SceneMedia from "../components/SceneMedia.vue"
 
-const SWIPE_DURATION_MS = 200 // oder 180 / 220 zum Testen
+const SWIPE_DURATION_MS = 50 // oder 180 / 220 zum Testen
 const SWIPE_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)"
 const state = ref<PlayerState | null>(null)
 const initLoaded = ref(false)
