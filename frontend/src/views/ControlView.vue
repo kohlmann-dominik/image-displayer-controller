@@ -201,8 +201,8 @@ const dragOffsetX = ref(0)
 // adaptiver Threshold: ~18 % der Breite
 const dragThreshold = 0.18
 
-// Transition-Flag (während Drag keine CSS-Transition)
-const disableTransition = ref(false)
+// Animations-Flag für den Wipe (Snap)
+const isAnimating = ref(false)
 
 // Snap-Zustand
 const snapping = ref(false)
@@ -228,11 +228,13 @@ const trackStyle = computed(() => {
   const baseOffset = -currentThumbPage.value * width
   const totalOffset = baseOffset + dragOffsetX.value
 
+  const shouldAnimate = isAnimating.value && !dragging.value
+
   return {
     transform: `translate3d(${totalOffset}px, 0, 0)`,
-    transition: disableTransition.value
-      ? "none"
-      : "transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+    transition: shouldAnimate
+      ? "transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)"
+      : "none",
   }
 })
 
@@ -264,8 +266,8 @@ function onThumbTouchStart(e: TouchEvent) {
   dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
 
-  // während des Drags keine Transition
-  disableTransition.value = true
+  // während des Drags keine Animations-Transition
+  isAnimating.value = false
 }
 
 function onThumbTouchMove(e: TouchEvent) {
@@ -323,22 +325,26 @@ function onThumbTouchEnd() {
   }
 
   // ab hier animieren (Transition an)
-  disableTransition.value = false
-
   if (targetPage !== currentThumbPage.value) {
     snapping.value = true
     pendingPage.value = targetPage
+    isAnimating.value = true
     dragOffsetX.value = animateToOffset
   } else {
     // nur zurücksnappen
     snapping.value = false
     pendingPage.value = null
+    isAnimating.value = true
     dragOffsetX.value = 0
   }
 }
 
 function onThumbTransitionEnd(e: TransitionEvent) {
   if (e.propertyName !== "transform") {
+    return
+  }
+
+  if (e.target !== e.currentTarget) {
     return
   }
 
@@ -350,9 +356,9 @@ function onThumbTransitionEnd(e: TransitionEvent) {
 
   snapping.value = false
   pendingPage.value = null
+  isAnimating.value = false
 
-  // nach Snap wieder in "Drag-Start" Zustand
-  disableTransition.value = true
+  // Offset zurücksetzen – jetzt ohne Transition (siehe trackStyle)
   dragOffsetX.value = 0
 }
 
@@ -699,7 +705,6 @@ async function deleteSelectedScenes() {
 }
 </script>
 
-
 <template>
   <div
     class="h-[100dvh] md:h-screen control-bg relative overflow-x-hidden overflow-y-hidden text-slate-900 px-4 py-4 md:py-6"
@@ -764,75 +769,72 @@ async function deleteSelectedScenes() {
             </span>
           </div>
 
-        <!-- Preview-Panel -->
-        <div
-          class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
-        >
-          <div class="relative w-full h-full flex items-center justify-center">
-            <SceneMedia
-              v-if="currentScene"
-              :scene="currentScene"
-              mode="control-preview"
-              :play-videos-full-length="!!state?.playVideosFullLength"
-              @requestNext="nextScene"
-              class="absolute inset-0 flex items-center justify-center"
-            />
+          <!-- Preview-Panel -->
+          <div
+            class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
+          >
+            <div class="relative w-full h-full flex items-center justify-center">
+              <SceneMedia
+                v-if="currentScene"
+                :scene="currentScene"
+                mode="control-preview"
+                :play-videos-full-length="!!state?.playVideosFullLength"
+                @requestNext="nextScene"
+                class="absolute inset-0 flex items-center justify-center"
+              />
+            </div>
           </div>
-        </div>
-
 
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
           <div class="mt-4 flex items-center justify-center gap-3">
-          <!-- PREVIOUS -->
-          <button
-            @click.stop="prevScene"
-            aria-label="Vorherige Szene"
-            class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
+            <!-- PREVIOUS -->
+            <button
+              @click.stop="prevScene"
+              aria-label="Vorherige Szene"
+              class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
                   shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
                   transition hover:bg-white/20 active:scale-95"
-          >
-            <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-              <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
-              <path d="M17 5L9 12l8 7z" fill="currentColor" />
-            </svg>
-          </button>
-
-          <!-- PLAY / PAUSE -->
-          <button
-            @click.stop="togglePlay"
-            aria-label="Play/Pause"
-            class="w-11 h-11 rounded-full border border-white/80 bg-white/30  text-zinc-100 
-                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
-                  transition hover:bg-white/20 active:scale-95"
-          >
-            <template v-if="state?.isPlaying">
+            >
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
-                <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
+                <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
+                <path d="M17 5L9 12l8 7z" fill="currentColor" />
               </svg>
-            </template>
-            <template v-else>
-              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                <path d="M8 5l11 7-11 7z" fill="currentColor" />
-              </svg>
-            </template>
-          </button>
+            </button>
 
-          <!-- NEXT -->
-          <button
-            @click.stop="nextScene"
-            aria-label="Nächste Szene"
-            class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
+            <!-- PLAY / PAUSE -->
+            <button
+              @click.stop="togglePlay"
+              aria-label="Play/Pause"
+              class="w-11 h-11 rounded-full border border-white/80 bg-white/30  text-zinc-100 
                   shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
                   transition hover:bg-white/20 active:scale-95"
-          >
-            <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-              <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
+            >
+              <template v-if="state?.isPlaying">
+                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                  <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
+                </svg>
+              </template>
+              <template v-else>
+                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                  <path d="M8 5l11 7-11 7z" fill="currentColor" />
+                </svg>
+              </template>
+            </button>
 
-
+            <!-- NEXT -->
+            <button
+              @click.stop="nextScene"
+              aria-label="Nächste Szene"
+              class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
+                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
+                  transition hover:bg-white/20 active:scale-95"
+            >
+              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- SETTINGS PANEL -->
@@ -959,7 +961,11 @@ async function deleteSelectedScenes() {
             @touchend.stop="onThumbTouchEnd"
           >
             <!-- Track mit Seiten -->
-            <div class="flex thumb-track" :style="trackStyle" @transitionend="onThumbTransitionEnd">
+            <div
+              class="flex thumb-track"
+              :style="trackStyle"
+              @transitionend="onThumbTransitionEnd"
+            >
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
@@ -1117,7 +1123,7 @@ async function deleteSelectedScenes() {
 
     <!-- Upload-Toast unten -->
     <Teleport to="body">
-     <div
+      <div
         v-if="uploading"
         class="fixed inset-x-0 bottom-20 z-[9500] flex justify-center px-4 pointer-events-none"
       >
@@ -1137,7 +1143,7 @@ async function deleteSelectedScenes() {
       </div>
     </Teleport>
 
-   <!-- MODAL PREVIEW -->
+    <!-- MODAL PREVIEW -->
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
@@ -1181,6 +1187,5 @@ async function deleteSelectedScenes() {
         </div>
       </Transition>
     </Teleport>
-
   </div>
 </template>
