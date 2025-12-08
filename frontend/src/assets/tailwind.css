@@ -408,8 +408,12 @@ body {
 }
 
 .thumb-swipe-area {
-  touch-action: pan-x;
+  touch-action: pan-y;
   overscroll-behavior: contain;
+}
+
+.thumb-track {
+  will-change: transform;
 }
 
 /* Globaler „Teppich"-Schatten unter der gesamten Control-Spalte */

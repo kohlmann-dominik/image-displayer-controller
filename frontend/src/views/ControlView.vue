@@ -221,10 +221,11 @@ const trackStyle = computed(() => {
   const totalOffset = baseOffset + dragOffsetX.value
 
   return {
-    transform: `translateX(${totalOffset}px)`,
+    // WICHTIG: translate3d → GPU-Beschleunigung
+    transform: `translate3d(${totalOffset}px, 0, 0)`,
     transition: disableTransition.value
       ? "none"
-      : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+      : "transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)",
   }
 })
 
@@ -905,7 +906,7 @@ async function deleteSelectedScenes() {
             @touchend.stop="onThumbTouchEnd"
           >
             <!-- Track mit Seiten -->
-            <div class="flex" :style="trackStyle">
+            <div class="flex thumb-track" :style="trackStyle">
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
