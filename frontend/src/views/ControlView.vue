@@ -810,10 +810,13 @@ async function deleteSelectedScenes() {
                     ]"
                   >
                     <div
-                      :class="[
-                        'overflow-hidden glass-thumb',
-                        scene.id === state?.currentSceneId ? 'ring-3 ring-sky-400' : ''
-                      ]"
+                     :class="[
+                      // Preview-Style + Thumbnail-Rahmen
+                      'glass-panel-soft-preview glass-thumb rounded-[24px]',
+                      scene.id === state?.currentSceneId
+                        ? 'ring-2 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
+                        : ''
+                    ]"
                     >
                       <div class="w-full h-[170px] sm:h-[185px]">
                         <template v-if="scene.thumbnailUrl">

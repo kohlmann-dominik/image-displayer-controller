@@ -7,7 +7,7 @@ import { router } from "./router"
 // main.ts
 
 // 1) Version anpassen, wenn du etwas Größeres änderst (CSS, Layout, Background etc.)
-const APP_VERSION = "0.1.9.2"
+const APP_VERSION = "0.1.9.3"
 
 const url = new URL(window.location.href)
 
