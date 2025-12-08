@@ -12,8 +12,6 @@ import { API_BASE } from "../config"
 import { connectWs, onStateChange, sendMessage } from "../ws"
 import SceneMedia from "../components/SceneMedia.vue"
 
-const SWIPE_DURATION_MS = 400 // oder 180 / 220 zum Testen
-const SWIPE_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)"
 const state = ref<PlayerState | null>(null)
 const initLoaded = ref(false)
 let unsubscribe: (() => void) | null = null
@@ -129,14 +127,12 @@ function computeNextScene(): Scene | null {
       return list[0] ?? null
     }
     let idx = currentIndex
-    // stelle sicher, dass wir nicht immer die gleiche Szene erwischen
     while (idx === currentIndex || idx === -1) {
       idx = Math.floor(Math.random() * list.length)
     }
     return list[idx] ?? null
   }
 
-  // sequential (default)
   if (currentIndex === -1) {
     return list[0] ?? null
   }
@@ -154,12 +150,10 @@ function scheduleNextByTimer() {
     return
   }
 
-  // nur wenn Player wirklich spielt
   if (!s.isPlaying) {
     return
   }
 
-  // Wenn Video + volle Länge → kein Timer, Wechsel über @requestNext (SceneMedia)
   if (scene.type === "video" && s.playVideosFullLength) {
     return
   }
@@ -173,7 +167,7 @@ function scheduleNextByTimer() {
 }
 
 // ===============================
-// Pagination + Touch-Swipe (SMOOTH)
+// Pagination + Touch-Swipe (vereinfachte, smooth Variante)
 // ===============================
 const thumbPageSize = 6
 const currentThumbPage = ref(0)
@@ -200,15 +194,15 @@ function updateSlotWidth() {
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragOffsetX = ref(0)
-// adaptiver Threshold: ~18 % der Breite
 const dragThreshold = 0.18
-
-// Animations-Flag für den Wipe (Snap)
-const isAnimating = ref(false)
 
 // Snap-Zustand
 const snapping = ref(false)
 const pendingPage = ref<number | null>(null)
+
+// Swipe-Config
+const SWIPE_DURATION_MS = 300
+const SWIPE_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)"
 
 // Seiten als Array von Scene-Arrays
 const pages = computed(() => {
@@ -230,7 +224,7 @@ const trackStyle = computed(() => {
   const baseOffset = -currentThumbPage.value * width
   const totalOffset = baseOffset + dragOffsetX.value
 
-  const shouldAnimate = isAnimating.value && !dragging.value
+  const shouldAnimate = !dragging.value
 
   return {
     transform: `translate3d(${totalOffset}px, 0, 0)`,
@@ -267,9 +261,6 @@ function onThumbTouchStart(e: TouchEvent) {
   dragging.value = true
   dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
-
-  // während des Drags keine Animations-Transition
-  isAnimating.value = false
 }
 
 function onThumbTouchMove(e: TouchEvent) {
@@ -296,21 +287,6 @@ function onThumbTouchMove(e: TouchEvent) {
   dragOffsetX.value = limitedOffset
 }
 
-function animateThumbTo(targetPage: number, offset: number) {
-  // Zielseite vormerken
-  snapping.value = true
-  pendingPage.value = targetPage
-
-  // Schritt 1: Aktuellen Stand ohne Transition rendern
-  isAnimating.value = false
-
-  // Schritt 2: Im nächsten Tick Transition aktivieren und Offset animieren
-  nextTick(() => {
-    isAnimating.value = true
-    dragOffsetX.value = offset
-  })
-}
-
 function onThumbTouchEnd() {
   if (!dragging.value) {
     return
@@ -331,29 +307,22 @@ function onThumbTouchEnd() {
 
   if (width > 0 && Math.abs(delta) > pxThreshold) {
     if (delta < 0 && canGoNext) {
-      // nach links → nächste Seite
       targetPage = currentThumbPage.value + 1
       animateToOffset = -width
     } else if (delta > 0 && canGoPrev) {
-      // nach rechts → vorige Seite
       targetPage = currentThumbPage.value - 1
       animateToOffset = width
     }
   }
 
   if (targetPage !== currentThumbPage.value) {
-    // Seitenwechsel mit Wipe-Animation
-    animateThumbTo(targetPage, animateToOffset)
+    snapping.value = true
+    pendingPage.value = targetPage
+    dragOffsetX.value = animateToOffset
   } else {
-    // nur zurück zur Ausgangsposition wipen
     snapping.value = false
     pendingPage.value = null
-
-    isAnimating.value = false
-    nextTick(() => {
-      isAnimating.value = true
-      dragOffsetX.value = 0
-    })
+    dragOffsetX.value = 0
   }
 }
 
@@ -374,9 +343,7 @@ function onThumbTransitionEnd(e: TransitionEvent) {
 
   snapping.value = false
   pendingPage.value = null
-  isAnimating.value = false
 
-  // Offset zurücksetzen – jetzt ohne Transition (siehe trackStyle)
   dragOffsetX.value = 0
 }
 
@@ -554,8 +521,6 @@ function handleFileChange(e: Event): void {
   totalUploadFiles.value = input.files.length
   uploadedFilesCount.value = 0
 
-  console.log("[upload] selected files:", input.files.length)
-
   void uploadFiles(input.files)
   input.value = ""
 }
@@ -569,19 +534,10 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
 
   try {
     const fileArray = Array.from(files)
-
     const chunkSize = 15
-
-    console.log("[upload] selected files:", fileArray.length)
 
     for (let i = 0; i < fileArray.length; i += chunkSize) {
       const chunk = fileArray.slice(i, i + chunkSize)
-      console.log(
-        "[upload] starting chunk",
-        i / chunkSize + 1,
-        "mit",
-        chunk.length,
-      )
 
       const formData = new FormData()
       for (const file of chunk) {
@@ -625,12 +581,6 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
       if (createdScenes.length === 0) {
         continue
       }
-
-      console.log(
-        "[upload] server returned",
-        createdScenes.length,
-        "scene(s) für chunk",
-      )
 
       scenes.value.push(...createdScenes)
 
@@ -1006,7 +956,6 @@ async function deleteSelectedScenes() {
                       ]"
                     >
                       <div class="w-full h-[170px] sm:h-[185px]">
-                        <!-- 1. Bevorzugt: Thumbnail (Image oder Video-Frame) -->
                         <template v-if="scene.thumbnailUrl">
                           <img
                             :src="API_BASE + scene.thumbnailUrl"
@@ -1016,7 +965,6 @@ async function deleteSelectedScenes() {
                           />
                         </template>
 
-                        <!-- 2. Fallback: normales Bild -->
                         <template v-else-if="scene.type === 'image'">
                           <img
                             :src="API_BASE + scene.url"
@@ -1026,7 +974,6 @@ async function deleteSelectedScenes() {
                           />
                         </template>
 
-                        <!-- 3. Fallback: Video ohne Autoplay, nur Poster/Standbild -->
                         <template v-else>
                           <video
                             :src="API_BASE + scene.url"
@@ -1172,7 +1119,6 @@ async function deleteSelectedScenes() {
           <div
             class="relative w-full h-full flex items-center justify-center"
           >
-            <!-- Bild/Video mit Rahmen direkt am Media-Element -->
             <SceneMedia
               :scene="previewScene"
               mode="modal-preview"
@@ -1180,7 +1126,6 @@ async function deleteSelectedScenes() {
               @requestNext="nextScene"
             />
 
-            <!-- Header (Titel + Close) als Overlay ÜBER dem Bild -->
             <div
               class="absolute inset-x-6 top-6 flex items-start justify-between gap-3 pointer-events-none"
             >
