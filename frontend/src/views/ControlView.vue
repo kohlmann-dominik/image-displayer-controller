@@ -221,7 +221,6 @@ const trackStyle = computed(() => {
   const totalOffset = baseOffset + dragOffsetX.value
 
   return {
-    // WICHTIG: translate3d → GPU-Beschleunigung
     transform: `translate3d(${totalOffset}px, 0, 0)`,
     transition: disableTransition.value
       ? "none"
@@ -282,7 +281,6 @@ function onThumbTouchMove(e: TouchEvent) {
   dragOffsetX.value = limitedOffset
 }
 
-
 function onThumbTouchEnd() {
   if (!dragging.value) {
     return
@@ -294,18 +292,25 @@ function onThumbTouchEnd() {
   const canGoPrev = currentThumbPage.value > 0
   const canGoNext = currentThumbPage.value < totalThumbPages.value - 1
 
-  // Ab hier wieder mit Transition animieren
-  disableTransition.value = false
+  // Für den Snap selbst KEINE Transition -> kein sichtbares Ruckeln
+  disableTransition.value = true
 
   if (delta > dragThreshold && canGoPrev) {
     currentThumbPage.value -= 1
   } else if (delta < -dragThreshold && canGoNext) {
     currentThumbPage.value += 1
   }
+  // Wenn der Swipe zu klein war → Seite bleibt, wir „snappen zurück“
 
+  // Track sofort auf neue Basisposition setzen
   dragOffsetX.value = 0
-}
 
+  // Im nächsten Frame Transition wieder aktivieren,
+  // damit der NÄCHSTE Swipe wieder smooth animiert.
+  requestAnimationFrame(() => {
+    disableTransition.value = false
+  })
+}
 
 const playVideosFullLength = computed<boolean>({
   get() {
