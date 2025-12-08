@@ -196,9 +196,13 @@ const dragStartX = ref(0)
 const dragOffsetX = ref(0)
 const dragThreshold = 0.18
 
+// kontrolliert, ob CSS-Transition aktiv ist
+const enableSwipeTransition = ref(false)
+
 // Snap-Zustand
 const snapping = ref(false)
 const pendingPage = ref<number | null>(null)
+
 
 // Swipe-Config
 const SWIPE_DURATION_MS = 300
@@ -224,15 +228,14 @@ const trackStyle = computed(() => {
   const baseOffset = -currentThumbPage.value * width
   const totalOffset = baseOffset + dragOffsetX.value
 
-  const shouldAnimate = !dragging.value
-
   return {
     transform: `translate3d(${totalOffset}px, 0, 0)`,
-    transition: shouldAnimate
+    transition: enableSwipeTransition.value
       ? `transform ${SWIPE_DURATION_MS}ms ${SWIPE_EASING}`
       : "none",
   }
 })
+
 
 watch(scenes, () => {
   const maxPage = Math.max(0, totalThumbPages.value - 1)
@@ -261,7 +264,10 @@ function onThumbTouchStart(e: TouchEvent) {
   dragging.value = true
   dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
+
+  enableSwipeTransition.value = false
 }
+
 
 function onThumbTouchMove(e: TouchEvent) {
   const firstTouch = e.touches[0]
@@ -315,14 +321,30 @@ function onThumbTouchEnd() {
     }
   }
 
+  // 1. Transition erstmal sicher aus
+  enableSwipeTransition.value = false
+
   if (targetPage !== currentThumbPage.value) {
     snapping.value = true
     pendingPage.value = targetPage
-    dragOffsetX.value = animateToOffset
+
+    const finalOffset = animateToOffset
+
+    // 2. Nächster Frame: Transition aktivieren + Ziel-Offset setzen
+    requestAnimationFrame(() => {
+      enableSwipeTransition.value = true
+      dragOffsetX.value = finalOffset
+    })
   } else {
     snapping.value = false
     pendingPage.value = null
-    dragOffsetX.value = 0
+
+    const finalOffset = 0
+
+    requestAnimationFrame(() => {
+      enableSwipeTransition.value = true
+      dragOffsetX.value = finalOffset
+    })
   }
 }
 
@@ -344,6 +366,8 @@ function onThumbTransitionEnd(e: TransitionEvent) {
   snapping.value = false
   pendingPage.value = null
 
+  // Nach der Animation wieder im "Drag-Start"-Zustand:
+  enableSwipeTransition.value = false
   dragOffsetX.value = 0
 }
 
