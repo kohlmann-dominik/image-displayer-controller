@@ -170,9 +170,12 @@ function scheduleNextByTimer() {
   }, ms)
 }
 
-// Pagination für Thumbnails
+// ===============================
+// Pagination + Touch-Swipe (SMOOTH)
+// ===============================
 const thumbPageSize = 6
 const currentThumbPage = ref(0)
+
 const totalThumbPages = computed(() => {
   const total = scenes.value.length
   if (total === 0) {
@@ -181,7 +184,7 @@ const totalThumbPages = computed(() => {
   return Math.ceil(total / thumbPageSize)
 })
 
-// Ref auf den sichtbaren Bereich, um die Breite zu messen
+// sichtbarer Bereich zum Messen der Breite
 const thumbOuter = ref<HTMLElement | null>(null)
 const slotWidth = ref(0)
 
@@ -195,10 +198,15 @@ function updateSlotWidth() {
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragOffsetX = ref(0)
-const dragThreshold = 60
+// adaptiver Threshold: ~18 % der Breite
+const dragThreshold = 0.18
 
 // Transition-Flag (während Drag keine CSS-Transition)
 const disableTransition = ref(false)
+
+// Snap-Zustand
+const snapping = ref(false)
+const pendingPage = ref<number | null>(null)
 
 // Seiten als Array von Scene-Arrays
 const pages = computed(() => {
@@ -214,7 +222,7 @@ const pages = computed(() => {
   return res
 })
 
-// Stil für den gesamten Track (alle Seiten nebeneinander)
+// Stil für den Track
 const trackStyle = computed(() => {
   const width = slotWidth.value || 0
   const baseOffset = -currentThumbPage.value * width
@@ -249,16 +257,19 @@ function onThumbTouchStart(e: TouchEvent) {
     return
   }
 
+  snapping.value = false
+  pendingPage.value = null
+
   dragging.value = true
   dragStartX.value = firstTouch.clientX
   dragOffsetX.value = 0
 
+  // während des Drags keine Transition
   disableTransition.value = true
 }
 
 function onThumbTouchMove(e: TouchEvent) {
   const firstTouch = e.touches[0]
-
   if (!dragging.value || !firstTouch) {
     return
   }
@@ -288,29 +299,66 @@ function onThumbTouchEnd() {
 
   dragging.value = false
 
+  const width = slotWidth.value || 0
   const delta = dragOffsetX.value
+
   const canGoPrev = currentThumbPage.value > 0
   const canGoNext = currentThumbPage.value < totalThumbPages.value - 1
 
-  // Für den Snap selbst KEINE Transition -> kein sichtbares Ruckeln
-  disableTransition.value = true
+  const pxThreshold = width * dragThreshold
 
-  if (delta > dragThreshold && canGoPrev) {
-    currentThumbPage.value -= 1
-  } else if (delta < -dragThreshold && canGoNext) {
-    currentThumbPage.value += 1
+  let targetPage = currentThumbPage.value
+  let animateToOffset = 0
+
+  if (width > 0 && Math.abs(delta) > pxThreshold) {
+    if (delta < 0 && canGoNext) {
+      // nach links → nächste Seite
+      targetPage = currentThumbPage.value + 1
+      animateToOffset = -width
+    } else if (delta > 0 && canGoPrev) {
+      // nach rechts → vorige Seite
+      targetPage = currentThumbPage.value - 1
+      animateToOffset = width
+    }
   }
-  // Wenn der Swipe zu klein war → Seite bleibt, wir „snappen zurück“
 
-  // Track sofort auf neue Basisposition setzen
-  dragOffsetX.value = 0
+  // ab hier animieren (Transition an)
+  disableTransition.value = false
 
-  // Im nächsten Frame Transition wieder aktivieren,
-  // damit der NÄCHSTE Swipe wieder smooth animiert.
-  requestAnimationFrame(() => {
-    disableTransition.value = false
-  })
+  if (targetPage !== currentThumbPage.value) {
+    snapping.value = true
+    pendingPage.value = targetPage
+    dragOffsetX.value = animateToOffset
+  } else {
+    // nur zurücksnappen
+    snapping.value = false
+    pendingPage.value = null
+    dragOffsetX.value = 0
+  }
 }
+
+function onThumbTransitionEnd(e: TransitionEvent) {
+  if (e.propertyName !== "transform") {
+    return
+  }
+
+  const width = slotWidth.value || 0
+
+  if (snapping.value && pendingPage.value != null && width > 0) {
+    currentThumbPage.value = pendingPage.value
+  }
+
+  snapping.value = false
+  pendingPage.value = null
+
+  // nach Snap wieder in "Drag-Start" Zustand
+  disableTransition.value = true
+  dragOffsetX.value = 0
+}
+
+// ===============================
+// Rest: Player, Upload, etc.
+// ===============================
 
 const playVideosFullLength = computed<boolean>({
   get() {
@@ -509,7 +557,6 @@ async function uploadFiles(files: FileList | File[]): Promise<void> {
         i / chunkSize + 1,
         "mit",
         chunk.length,
-        "Dateien",
       )
 
       const formData = new FormData()
@@ -651,6 +698,7 @@ async function deleteSelectedScenes() {
   }
 }
 </script>
+
 
 <template>
   <div
@@ -911,7 +959,7 @@ async function deleteSelectedScenes() {
             @touchend.stop="onThumbTouchEnd"
           >
             <!-- Track mit Seiten -->
-            <div class="flex thumb-track" :style="trackStyle">
+            <div class="flex thumb-track" :style="trackStyle" @transitionend="onThumbTransitionEnd">
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
