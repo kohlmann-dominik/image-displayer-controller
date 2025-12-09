@@ -13,14 +13,33 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-    background: linear-gradient(
+  /* Einfarbige Fallback-Farbe für iOS Statusbar und als Basis unter dem Wallpaper */
+  background-color: #38bdf8;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Höhe der iOS-Safe-Area oben, mit Fallback für andere Plattformen */
+  height: env(safe-area-inset-top, 24px);
+
+  /* Gradient, der sich an dein Controller-Blau anlehnt */
+  background: linear-gradient(
     to bottom,
-    #ffffff 0%,      /* reine Statusbar-Zone */
-    #ffffff 40px,    /* etwas Weiß behalten */
-    #e0f4ff 80px,    /* sehr helles Blau */
-    #c2e7ff 140px,   /* etwas kräftiger */
-    #38bdf8 220px    /* dein Controller-Blau */
+    #ffffff 0%,
+    #e0f4ff 40%,
+    #38bdf8 100%
   );
+
+  /* leichter Blur für einen weicheren Übergang zum Wallpaper */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  pointer-events: none;
+  z-index: 999;
 }
 
 #app {
