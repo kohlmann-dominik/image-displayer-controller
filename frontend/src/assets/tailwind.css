@@ -11,16 +11,8 @@ html {
   padding: 0;
   height: 100%;
   width: 100%;
+  overscroll-behavior-y: none;
 
-  /* Gradient, der zu deinem Wallpaper passt */
-  background:
-    linear-gradient(
-      to bottom,
-      #7fd3ff 0%,
-      #5ac5ff 40%,
-      #3eb7fd 70%,
-      #2f93f0 100%
-    );
 }
 
 /* 2) body: dein Wallpaper */
