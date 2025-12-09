@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  /* leichte türkise Basis für Reflektionen (wird nur subtil genutzt) */
   --glass-base: 94 234 212;
 }
 
-/* ===== PAGE-HINTERGRUND FÜR DEN GLAS-EFFEKT ===== */
+/* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
 
 html,
 body {
@@ -13,33 +12,27 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  /* Einfarbige Fallback-Farbe für iOS Statusbar und als Basis unter dem Wallpaper */
-  background-color: #38bdf8;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  /* Höhe der iOS-Safe-Area oben, mit Fallback für andere Plattformen */
-  height: env(safe-area-inset-top, 24px);
+/* Hier liegt jetzt dein Wallpaper + ein ganz leichter Gradient */
+body {
+  /* Fallback-Farbe falls das Bild mal nicht lädt */
+  background-color: #38bdf8;
 
-  /* Gradient, der sich an dein Controller-Blau anlehnt */
-  background: linear-gradient(
-    to bottom,
-    #ffffff 0%,
-    #e0f4ff 40%,
-    #38bdf8 100%
-  );
-
-  /* leichter Blur für einen weicheren Übergang zum Wallpaper */
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-
-  pointer-events: none;
-  z-index: 999;
+  /* Bild + halbtransparenter Gradient kombiniert */
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(127, 211, 255, 0.45) 0%,   /* oben etwas stärker */
+      rgba(90, 197, 255, 0.35) 40%,
+      rgba(62, 183, 253, 0.30) 70%,
+      rgba(47, 147, 240, 0.25) 100%  /* unten schwächer */
+    ),
+    url("./bg-blue-lines-wallpaper.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
 }
 
 #app {
@@ -50,13 +43,7 @@ body::before {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-
-  /* Bild als Hintergrund */
-  background-image: url("./bg-blue-lines-wallpaper.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background: transparent; /* KEIN eigenes Bild mehr */
 }
 
 .control-bg::before {
@@ -66,12 +53,13 @@ body::before {
   pointer-events: none;
   z-index: -1;
 
-  /* etwas aufhellen & glätten */
-  background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+  /* dein soften Licht-Effekt bleibt */
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
     radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.25), transparent 60%);
   mix-blend-mode: soft-light;
   opacity: 0.9;
-}
+} 
 
 /* Zusätzlich direkt hinter deinem View eine „Base-Card“ (falls du sie benutzt) */
 .glass-base-panel {
