@@ -30,7 +30,7 @@ body {
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
-  padding-top: env(safe-area-inset-top); /* Inhalt nicht unter die Statusbar schieben */
+   /* Inhalt nicht unter die Statusbar schieben padding-top: env(safe-area-inset-top);*/
 }
 
 /* ============================
