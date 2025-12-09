@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.3.7" // neue Version setzen
+const APP_VERSION = "0.3.8" // neue Version setzen
 
 const url = new URL(window.location.href)
 
