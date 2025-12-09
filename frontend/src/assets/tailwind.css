@@ -46,7 +46,6 @@ body {
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;
   background-attachment: scroll;   /* wichtig für iOS */
-  padding-top: env(safe-area-inset-top);
 }
 
 .control-bg::before {
