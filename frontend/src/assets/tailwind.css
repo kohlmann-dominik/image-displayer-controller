@@ -11,40 +11,30 @@ html,
 body {
   margin: 0;
   padding: 0;
-  min-height: 100dvh;
-  min-width: 100dvw;
-  background-image: url("./bg-blue-lines-wallpaper.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  height: 100%;
+  width: 100%;
+  background-color: #04a9ff;
 }
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;               /* top, right, bottom, left = 0 */
-  z-index: -1;
-  background-image: url("./bg-blue-lines-wallpaper.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Hintergrund für die ControlView – helles macOS-Blau, ohne dunkle Töne */
 /* ===== ControlView Hintergrund – macOS-Style in hellem Blau, mehr „Wallpaper“ ===== */
+/* ===== ControlView Hintergrund – helles, kontrastreiches Blau mit "Wave"-Look ===== */
 
 .control-bg {
   position: relative;
   min-height: 100dvh;
 
+  /* Bild als Hintergrund */
+  background-image: url("./bg-blue-lines-wallpaper.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .control-bg::before {
