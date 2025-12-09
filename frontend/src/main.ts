@@ -1,24 +1,39 @@
 import { createApp } from "vue"
-import "./assets/tailwind.css"   // unser Tailwind
-import "./style.css"             // optional: die Vite-Standardstyles, kannst du auch weglassen
+import "./assets/tailwind.css"
+import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-// main.ts
-
 // 1) Version anpassen, wenn du etwas Größeres änderst (CSS, Layout, Background etc.)
-const APP_VERSION = "0.1.9.4"
+const APP_VERSION = "0.1.9.5"
 
-const url = new URL(window.location.href)
+// zentrale Bootstrap-Funktion
+function bootstrap(): void {
+  const app = createApp(App)
 
-// 2) Wenn die aktuelle URL noch nicht diese Version hat → auf dieselbe URL mit ?v=... umleiten
-if (url.searchParams.get("v") !== APP_VERSION) {
-  url.searchParams.set("v", APP_VERSION)
-  window.location.replace(url.toString())
-  // IMPORTANT: Danach nicht weiter initialisieren – der Reload lädt die neue Version
+  app.use(router)
+  app.mount("#app")
+
+  // Optional: Service Worker für PWA
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .catch((err) => {
+          console.error("Service Worker registration failed:", err)
+        })
+    })
+  }
 }
 
-const app = createApp(App)
+const url = new URL(window.location.href)
+const currentVersion = url.searchParams.get("v")
 
-app.use(router)
-app.mount("#app")
+// 2) Wenn die aktuelle URL noch nicht diese Version hat → umleiten
+if (currentVersion !== APP_VERSION) {
+  url.searchParams.set("v", APP_VERSION)
+  window.location.replace(url.toString())
+} else {
+  // gleiche Version → App normal starten
+  bootstrap()
+}
