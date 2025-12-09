@@ -23,7 +23,7 @@ export async function generateThumbnail(
     return `/images/thumbnails/${thumbName}`
   }
 
-  if (!isVideo) {
+  if (isVideo === false) {
     // -------------------------
     // IMAGE → SHARP THUMBNAIL
     // -------------------------
@@ -34,8 +34,29 @@ export async function generateThumbnail(
         .toFile(thumbPath)
 
       return `/images/thumbnails/${thumbName}`
-    } catch (err) {
-      console.error("[thumbnail] sharp error:", err)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : String(err)
+
+      console.error(
+        "[thumbnail] sharp error for",
+        filepath,
+        "-",
+        message,
+      )
+
+      // Typischer Fall: HEIC/HEIF wird von diesem sharp/libvips-Build nicht unterstützt.
+      // → nur warnen, Thumbnail überspringen, aber Szene trotzdem verwenden.
+      if (
+        message.includes("heif") === true ||
+        message.includes("HEIC") === true ||
+        message.includes("heic") === true
+      ) {
+        console.warn(
+          "[thumbnail] HEIC/HEIF scheint in diesem sharp/libvips-Build nicht unterstützt zu sein. Thumbnail wird übersprungen.",
+        )
+      }
+
       return null
     }
   }
@@ -48,10 +69,14 @@ export async function generateThumbnail(
       "ffmpeg",
       [
         "-y",
-        "-ss", "00:00:01",
-        "-i", filepath,
-        "-frames:v", "1",
-        "-vf", "scale=480:360:force_original_aspect_ratio=decrease",
+        "-ss",
+        "00:00:01",
+        "-i",
+        filepath,
+        "-frames:v",
+        "1",
+        "-vf",
+        "scale=480:360:force_original_aspect_ratio=decrease",
         thumbPath,
       ],
       (err) => {
@@ -60,6 +85,7 @@ export async function generateThumbnail(
           resolve(null)
           return
         }
+
         resolve(`/images/thumbnails/${thumbName}`)
       },
     )

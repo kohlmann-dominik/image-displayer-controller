@@ -168,7 +168,7 @@ function scheduleNextByTimer() {
 // ===============================
 // Pagination mit Scroll + Scroll-Snap (iOS-freundlich)
 // ===============================
-const thumbPageSize = 6
+const thumbPageSize = 12
 const currentThumbPage = ref(0)
 
 const totalThumbPages = computed(() => {
@@ -542,7 +542,7 @@ async function deleteSelectedScenes() {
 
 <template>
   <div
-    class="h-[100dvh] md:h-screen control-bg relative overflow-x-hidden overflow-y-hidden text-slate-900 px-4 py-4 md:py-6"
+    class="h-dvh md:h-screen control-bg relative overflow-x-hidden overflow-y-hidden text-slate-900 px-4 py-4 md:py-6"
   >
     <div class="w-full max-w-md mx-auto space-y-4">
       <!-- TAB HEADERS -->
@@ -765,7 +765,7 @@ async function deleteSelectedScenes() {
       <!-- TAB 2 – SZENEN -->
       <div
         v-if="activeTab === 'scenes'"
-        class="space-y-4 pb-2 flex flex-col"
+        class="pb-2 pt-2 flex flex-col"
       >
         <!-- Header -->
         <div class="flex items-baseline justify-between gap-2">
@@ -787,19 +787,19 @@ async function deleteSelectedScenes() {
         </div>
 
         <!-- Scroll Container mit Scroll-Snap -->
-        <div class="flex-1 min-h-0 overflow-y-hidden px-1 pt-1 pb-1">
+        <div class="flex-1 min-h-0 overflow-y-hidden -mx-4 sm:mx-0 pt-1 pb-4">
           <div
             ref="thumbOuter"
-            class="relative group overflow-x-auto overflow-y-hidden thumb-swipe-area snap-x snap-mandatory scroll-smooth"
+            class="relative group overflow-x-auto overflow-y-hidden thumb-swipe-area snap-x snap-mandatory scroll-smooth px-0"
             @scroll.passive="onThumbScroll"
           >
-            <div class="flex">
+            <div class="flex min-w-full">
               <div
                 v-for="(pageScenes, pageIndex) in pages"
                 :key="pageIndex"
-                class="w-full flex-shrink-0 snap-start"
+                class="w-screen md:w-full flex-shrink-0 snap-start mb-4 mt-2"
               >
-                <div class="grid grid-cols-2 gap-3 p-1">
+                <div class="w-full px-4 mx-auto grid grid-cols-3 gap-x-4 sm:gap-x-4 gap-y-2 sm:gap-y-3 py-2 sm:py-3">
                   <div
                     v-for="scene in pageScenes"
                     :key="scene.id"
@@ -811,40 +811,44 @@ async function deleteSelectedScenes() {
                   >
                     <div
                       :class="[
-                        'relative rounded-[24px] overflow-hidden glass-thumb glass-panel-soft-preview',
+                        'relative rounded-[18px] overflow-visible m-[4px] bg-white/60 shadow-[0_6px_18px_rgba(255,255,255,0.48)]',
                         scene.id === state?.currentSceneId
-                          ? 'ring-2 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
+                          ? 'ring-3 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
                           : ''
                       ]"
                     >
-                      <div class="w-full h-[170px] sm:h-[185px]">
-                        <template v-if="scene.thumbnailUrl">
-                          <img
-                            :src="API_BASE + scene.thumbnailUrl"
-                            loading="lazy"
-                            decoding="async"
-                            class="w-full h-full object-cover"
-                          />
-                        </template>
+                      <div class="rounded-[18px] overflow-hidden bg-white/5">
+                        <div class="w-full aspect-square">
+                          <template v-if="scene.thumbnailUrl">
+                            <img
+                              :src="API_BASE + scene.thumbnailUrl"
+                              loading="lazy"
+                              decoding="async"
+                              class="w-full h-full object-cover"
+                            />
+                          </template>
 
-                        <template v-else-if="scene.type === 'image'">
-                          <img
-                            :src="API_BASE + scene.url"
-                            loading="lazy"
-                            decoding="async"
-                            class="w-full h-full object-cover"
-                          />
-                        </template>
+                          <template v-else-if="scene.type === 'image'">
+                            <img
+                              :src="API_BASE + scene.url"
+                              loading="lazy"
+                              decoding="async"
+                              class="w-full h-full object-cover"
+                            />
+                          </template>
 
-                        <template v-else>
-                          <video
-                            :src="API_BASE + scene.url"
-                            class="w-full h-full object-cover"
-                            muted
-                            playsinline
-                            preload="metadata"
-                          ></video>
-                        </template>
+                          <template v-else>
+                            <!-- :poster for faster loading scene on modal open -->
+                            <video
+                              :src="API_BASE + scene.url"
+                              :poster="scene.thumbnailUrl ? API_BASE + scene.thumbnailUrl : undefined"
+                              class="w-full h-full object-cover"
+                              muted
+                              playsinline
+                              preload="metadata"
+                            ></video>
+                          </template>
+                        </div>
                       </div>
                     </div>
 
@@ -970,43 +974,53 @@ async function deleteSelectedScenes() {
       </div>
     </Teleport>
 
-    <!-- MODAL PREVIEW -->
+   <!-- MODAL PREVIEW -->
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
           v-if="previewScene"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/30 backdrop-blur-xs px-4"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/30 backdrop-blur-xs "
           @click.self="closePreview"
         >
-          <div
-            class="relative w-full h-full flex items-center justify-center"
-          >
-            <SceneMedia
-              :scene="previewScene"
-              mode="modal-preview"
-              :play-videos-full-length="!!state?.playVideosFullLength"
-              @requestNext="nextScene"
-            />
-
+          <div class="relative w-full h-full flex items-center justify-center">
+            <!-- Gemeinsamer Frame für Titel + Media -->
             <div
-              class="absolute inset-x-6 top-6 flex items-start justify-between gap-3 pointer-events-none"
+              class="relative w-full max-w-[min(100vw-40px,900px)] mx-auto flex flex-col items-stretch"
             >
-              <span
-                class="max-w-[70%] truncate rounded-full bg-white/75 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition pointer-events-auto"
+              <!-- Titel + X: exakt an den Bildrand angepasst -->
+              <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-full flex items-start justify-between gap-3 pointer-events-none"
               >
-                {{
-                  previewScene?.title ||
-                  previewScene?.id?.toString() ||
-                  "Preview"
-                }}
-              </span>
+                <span
+                  class="max-w-[70%] truncate rounded-full bg-white/75 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition pointer-events-auto"
+                >
+                  {{
+                    previewScene?.title ||
+                    previewScene?.id?.toString() ||
+                    "Preview"
+                  }}
+                </span>
 
-              <button
-                class="w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto active:scale-95 transition"
-                @click.stop="closePreview"
+                <button
+                  class="w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto active:scale-95 transition"
+                  @click.stop="closePreview"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Bild / Video mit gleichem Frame wie Header -->
+              <div
+                class="modal-media-frame mt-12 w-full overflow-hidden"
               >
-                ✕
-              </button>
+                <SceneMedia
+                  :scene="previewScene"
+                  mode="modal-preview"
+                  :play-videos-full-length="!!state?.playVideosFullLength"
+                  @requestNext="nextScene"
+                  class="w-full h-full object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
