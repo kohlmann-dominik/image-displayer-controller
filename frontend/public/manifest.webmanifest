@@ -1,6 +1,6 @@
 {
   "name": "Image Displayer Controller",
-  "short_name": "Dsiplay Controller",
+  "short_name": "Display Controller",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#65ccfe",
