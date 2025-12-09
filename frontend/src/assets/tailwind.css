@@ -26,6 +26,18 @@ body {
   min-height: 100dvh;              /* echte Viewport-Höhe */
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #65ccfe;
+  z-index: 9999;
+  pointer-events: none;
+}
+
 /* App-Root */
 #app {
   min-height: 100dvh;
