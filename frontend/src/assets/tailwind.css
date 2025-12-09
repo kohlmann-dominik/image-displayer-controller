@@ -4,38 +4,37 @@
   --glass-base: 94 234 212;
 }
 
-/* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
+/* ===== GLOBAL: Seite + Wallpaper ===== */
 
-html,
-body {
+html {
   margin: 0;
   padding: 0;
-  width: 100%;
-  background-color: #0ea5e9;
+  height: 100%;
 }
 
 body {
-  /* wichtig: eigene Hintergrundfarbe, falls Bild nicht voll füllt */
-  background-color: #0ea5e9; /* oder ein passender Blau-Ton deines Gradients */
+  margin: 0;
+  padding: 0;
 
-  /* Bild */
+  /* Fallback-Farbe hinter dem Bild */
+  background-color: #0ea5e9;
+
+  /* Wallpaper */
   background-image: url("./bg-blue-lines-wallpaper.png");
   background-size: cover;          /* füllt den Screen */
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;
-  background-attachment: scroll;   /* NICHT fixed auf iOS */
+  background-attachment: scroll;   /* wichtig für iOS */
 
-  min-height: 100dvh;              /* echte Viewport-Höhe inkl. Safe Area */
+  min-height: 100dvh;              /* echte Viewport-Höhe */
 }
 
 /* App-Root */
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top); /* Inhalt nicht unter die Statusbar schieben */
 }
-
-
 
 /* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
 
