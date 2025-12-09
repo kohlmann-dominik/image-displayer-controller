@@ -11,20 +11,31 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100%;
-  background-color: transparent;
-    background-image: url("./bg-blue-lines-wallpaper.png");
+  min-height: 100dvh;
+  min-width: 100dvw;
+  background-image: url("./bg-blue-lines-wallpaper.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
-  overscroll-behavior-y: none;
 }
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;               /* top, right, bottom, left = 0 */
+  z-index: -1;
+  background-image: url("./bg-blue-lines-wallpaper.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Hintergrund für die ControlView – helles macOS-Blau, ohne dunkle Töne */

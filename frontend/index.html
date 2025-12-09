@@ -3,40 +3,35 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Viewport für Mobile -->
+    <!-- Viewport für Mobile + Safe Area -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
 
-    <!-- Favicon (kannst du bei Bedarf anpassen) -->
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- Allgemeine Theme-Farbe (für Chrome/Android & iOS teilweise) -->
-    <meta name="theme-color" content="#38bdf8" />
+    <!-- Theme-Farbe für Browser-UI / Statusbar
+         Schwarz, damit die transparente Statusbar nicht „farbig“ wirkt -->
+    <meta name="theme-color" content="#000000" />
 
     <!-- Android / Chrome: Web-App Modus -->
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- iOS: „Als App auf dem Homescreen“ aktivieren (deprecated, aber noch verwendet) -->
+    <!-- iOS: „Als App auf dem Homescreen“ aktivieren -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    <!-- Statusbar-Stil:
-         - default           = weiße Statusbar, dunkler Text
-         - black             = schwarze Statusbar, weiße Schrift
-         - black-translucent = transparente/leuchtende Statusbar über deinem Hintergrund
-    -->
+    <!-- iOS Statusbar transparent über dem Inhalt -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Titel der App auf dem Homescreen -->
     <meta name="apple-mobile-web-app-title" content="Controller" />
 
-    <!-- Icon für iOS Homescreen
-         WICHTIG: Die Datei muss unter `frontend/public/icons/app-icon-192.png` existieren.
-    -->
+    <!-- Icon für iOS Homescreen -->
     <link rel="apple-touch-icon" href="/icons/app-icon-192.png" />
 
     <title>Image Displayer Controller</title>
