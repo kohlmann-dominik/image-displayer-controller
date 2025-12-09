@@ -1,44 +1,28 @@
-<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Viewport für Mobile + Safe Area -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.webmanifest" />
-
-    <!-- Theme-Farbe für Browser-UI / Statusbar
-         Schwarz, damit die transparente Statusbar nicht „farbig“ wirkt -->
-    <meta name="theme-color" content="transparent" />
-
-    <!-- Android / Chrome: Web-App Modus -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- iOS: „Als App auf dem Homescreen“ aktivieren -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- theme-color optional, aber solide Farbe wenn Splashscreen -->
+    <meta name="theme-color" content="#020617" />
 
-    <!-- iOS Statusbar transparent über dem Inhalt -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="transparent" />
-
-    <!-- Titel der App auf dem Homescreen -->
-    <meta name="apple-mobile-web-app-title" content="Controller" />
-
-    <!-- Icon für iOS Homescreen -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/app-icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 
     <title>Image Displayer Controller</title>
   </head>
   <body>
     <div id="app"></div>
-    <!-- Vite / Vue Entry -->
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

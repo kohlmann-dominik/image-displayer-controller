@@ -6,37 +6,28 @@
 
 /* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
 
-html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overscroll-behavior-y: none;
-
-}
-
-/* 2) body: dein Wallpaper */
+html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
-
-  /* Fallback-Farbe falls das Bild mal nicht lädt */
-  /* background-color: #38bdf8;  // optional */
-
-  background-image: url("./bg-blue-lines-wallpaper.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  /* wichtig für iOS, damit es überhaupt hinter der Statusbar gerendert wird */
-  background-attachment: scroll;
 }
 
+/* Body-Hintergrund ist das, was in der Statusbar sichtbar wird */
+body {
+  background-image: url("./bg-blue-lines-wallpaper.png");
+  background-size: contain;
+  background-position: center top; /* oben ansetzen, damit das Motiv in der Statusbar gut wirkt */
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* App-Root */
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
+  padding-top: env(safe-area-inset-top); /* Inhalt nicht unter den Text der Statusbar schieben */
 }
 
 .control-bg {
