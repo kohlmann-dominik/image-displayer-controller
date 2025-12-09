@@ -13,21 +13,20 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-    background-image: url("./bg-blue-lines-wallpaper.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+    background: linear-gradient(
+    to bottom,
+    #ffffff 0%,      /* reine Statusbar-Zone */
+    #ffffff 40px,    /* etwas Weiß behalten */
+    #e0f4ff 80px,    /* sehr helles Blau */
+    #c2e7ff 140px,   /* etwas kräftiger */
+    #38bdf8 220px    /* dein Controller-Blau */
+  );
 }
 
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
 }
-
-/* Hintergrund für die ControlView – helles macOS-Blau, ohne dunkle Töne */
-/* ===== ControlView Hintergrund – macOS-Style in hellem Blau, mehr „Wallpaper“ ===== */
-/* ===== ControlView Hintergrund – helles, kontrastreiches Blau mit "Wave"-Look ===== */
 
 .control-bg {
   position: relative;
