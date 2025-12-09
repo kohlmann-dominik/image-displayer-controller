@@ -22,14 +22,6 @@ body {
 
   /* Fallback-Farbe hinter dem Bild */
   background-color: #65ccfe;
-
-  /* Wallpaper */
-  background-image: url("./bg-blue-lines-wallpaper-top65ccfe.png");
-  background-size: cover;          /* füllt den Screen */
-  background-position: center top; /* Motiv oben halten */
-  background-repeat: no-repeat;
-  background-attachment: scroll;   /* wichtig für iOS */
-
   min-height: 100dvh;              /* echte Viewport-Höhe */
 }
 
@@ -48,6 +40,11 @@ body {
   position: relative;
   min-height: 100dvh;
   background: transparent;
+   background-image: url("./bg-blue-lines-wallpaper-top65ccfe.png");
+  background-size: cover;          /* füllt den Screen */
+  background-position: center top; /* Motiv oben halten */
+  background-repeat: no-repeat;
+  background-attachment: scroll;   /* wichtig für iOS */
 }
 
 .control-bg::before {
