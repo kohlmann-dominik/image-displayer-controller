@@ -3,12 +3,29 @@ import DisplayView from "./views/DisplayView.vue"
 import ControlView from "./views/ControlView.vue"
 
 const routes = [
-  { path: "/", redirect: "/display" },
-  { path: "/display", component: DisplayView },
-  { path: "/control", component: ControlView },
+  {
+    path: "/",
+    redirect: "/control",
+  },
+  {
+    path: "/control",
+    name: "control",
+    component: ControlView,
+  },
+  {
+    path: "/display",
+    name: "display",
+    component: DisplayView,
+  },
+  // Fallback: alles Unbekannte auf /control
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/control",
+  },
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  // sauber: respektiert Vite base (z.B. "/" oder "/displaycontroller/")
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })

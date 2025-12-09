@@ -6,11 +6,13 @@ import {
   onBeforeUnmount,
   watch,
 } from "vue"
+import { useRouter } from "vue-router"
 import type { PlayerState, PlayMode, Scene } from "../types"
 import { API_BASE } from "../config"
 import { connectWs, onStateChange, sendMessage } from "../ws"
 import SceneMedia from "../components/SceneMedia.vue"
 
+const router = useRouter()
 const state = ref<PlayerState | null>(null)
 const initLoaded = ref(false)
 let unsubscribe: (() => void) | null = null
@@ -101,6 +103,10 @@ const visibleCount = computed(() => visibleScenes.value.length)
 
 // --- TIMER für Auto-Wechsel ---
 const timerId = ref<number | null>(null)
+
+function goToDisplayFullscreen(): void {
+  router.push("/display")
+}
 
 function clearTimer() {
   if (timerId.value !== null) {
@@ -615,6 +621,7 @@ async function deleteSelectedScenes() {
                 mode="control-preview"
                 :play-videos-full-length="!!state?.playVideosFullLength"
                 @requestNext="nextScene"
+                @requestFullscreenDisplay="goToDisplayFullscreen"
                 class="absolute inset-0 flex items-center justify-center"
               />
             </div>

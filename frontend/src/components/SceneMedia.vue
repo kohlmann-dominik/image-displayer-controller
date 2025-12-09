@@ -11,13 +11,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "requestNext"): void
+  (e: "requestFullscreenDisplay"): void
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 
 const mediaClass = computed(() => {
   if (props.mode === "control-preview") {
-    // Preview-Panel: Panel hat fixe Größe, Bild füllt Panel und darf croppen
+    // Preview-Panel: Bild/Video möglichst vollständig sichtbar, leicht eingepasst
     return "w-full h-full object-contain"
   }
 
@@ -29,7 +30,6 @@ const mediaClass = computed(() => {
   // DISPLAY (Vollbild): Bild/Videos sollen in den Screen passen
   return "w-full h-full object-contain"
 })
-
 
 const isVideo = computed(() => {
   if (!props.scene) {
@@ -184,10 +184,10 @@ function handleEnded() {
     ]"
   >
     <!-- ========================================================= -->
-    <!-- NO TRANSITION FOR CONTROL-PREVIEW                         -->
+    <!-- CONTROL-PREVIEW: ohne Transition, mit eigenem Fullscreen-Button -->
     <!-- ========================================================= -->
     <template v-if="mode === 'control-preview'">
-      <div class="w-full h-full flex items-center justify-center">
+      <div class="relative w-full h-full flex items-center justify-center">
         <!-- IMAGE -->
         <template v-if="scene && scene.type === 'image'">
           <img
@@ -217,11 +217,50 @@ function handleEnded() {
             Keine Szene ausgewählt
           </div>
         </template>
+
+        <!-- Dezenter Fullscreen-Button (öffnet Display-Route) -->
+        <button
+          type="button"
+          class="absolute bottom-2 right-3 w-8 h-8 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-[13px] text-slate-700 shadow-sm hover:bg-white/95 active:scale-95 transition"
+          @click.stop="emit('requestFullscreenDisplay')"
+          aria-label="Fullscreen anzeigen"
+        >
+          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
+              <path
+                d="M5 9V5h4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M19 9V5h-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M5 15v4h4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M19 15v4h-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+        </button>
       </div>
     </template>
 
     <!-- ========================================================= -->
-    <!-- NORMAL TRANSITION FOR MODAL + DISPLAY                      -->
+    <!-- MODAL + DISPLAY: mit Transition                           -->
     <!-- ========================================================= -->
     <template v-else>
       <Transition :name="transitionName" mode="out-in">
