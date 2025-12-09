@@ -1,29 +1,44 @@
 @import "tailwindcss";
 
+/* =======================================
+   Root Tokens
+   ======================================= */
+
 :root {
   --glass-base: 94 234 212;
 }
 
-/* ============================
-   GLOBAL: Seite + Wallpaper
-   ============================ */
+/* =======================================
+   GLOBAL: Seite + Statusbar + App-Root
+   ======================================= */
 
 html {
   margin: 0;
   padding: 0;
   height: 100%;
   overscroll-behavior-y: none;
-  background-color: #65ccfe;
+  background-color: #38bdf8;
   -webkit-overflow-scrolling: touch;
 }
 
 body {
   margin: 0;
   padding: 0;
+  background-color: #38bdf8;
+  min-height: 100dvh;
+}
 
-  /* Fallback-Farbe hinter dem Bild */
-  background-color: #65ccfe;
-  min-height: 100dvh;              /* echte Viewport-Höhe */
+/* iOS Statusbar-Overlay (gleiche Farbe wie Hintergrund) */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #38bdf8;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 /* App-Root */
@@ -31,17 +46,17 @@ body {
   min-height: 100dvh;
   min-width: 100dvw;
   padding-top: 0;
-   /* Inhalt nicht unter die Statusbar schieben padding-top: env(safe-area-inset-top);*/
+  /* früher: padding-top: env(safe-area-inset-top); */
 }
 
-/* ============================
+/* =======================================
    PAGE-HINTERGRUND – Control View
-   ============================ */
+   ======================================= */
 
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  background-image: url("./bg-blue-lines-wallpaper-top65ccfe.png");
+  background-image: url("./bg-blue-lines-wallpaper-sky400-top.png");
   background-size: cover;          /* füllt den Screen */
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;
@@ -61,19 +76,6 @@ body {
     radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.25), transparent 60%);
   mix-blend-mode: soft-light;
   opacity: 0.9;
-}
-
-/* Zusätzlich direkt hinter deinem View eine „Base-Card“ (falls du sie nutzt) */
-.glass-base-panel {
-  background:
-    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  box-shadow:
-    0 30px 80px rgba(15, 23, 42, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
-  backdrop-filter: blur(26px) saturate(1.45);
-  -webkit-backdrop-filter: blur(26px) saturate(1.45);
 }
 
 /* Globaler „Teppich"-Schatten unter der gesamten Control-Spalte */
@@ -98,24 +100,38 @@ body {
   pointer-events: none;
 }
 
-/* ============================
-   Preview / Modal
-   ============================ */
+/* =======================================
+   Glass Panels & Frames
+   ======================================= */
 
+/* Optionaler „Base-Card“-Look, falls verwendet */
+.glass-base-panel {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.9), transparent 55%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  backdrop-filter: blur(26px) saturate(1.45);
+  -webkit-backdrop-filter: blur(26px) saturate(1.45);
+}
+
+/* Preview-Panel um die Live-Preview herum */
 .glass-panel-soft-preview {
   background-color: transparent;
   border: none;
-  box-shadow:
-    0 20px 54px rgba(255, 255, 255, 0.85);
+  /* sehr leichter weißer Glow – bewusst dezent */
+  box-shadow: 0 8px 26px rgba(255, 255, 255, 0.18);
 }
 
+/* Frame für das Modal-Media (Bild/Video) */
 .modal-media-frame {
   border-radius: 32px;
   overflow: hidden;
-  box-shadow:
-    0 20px 54px rgba(255, 255, 255, 0.85);
 }
 
+/* Kräftigeres Panel – falls benötigt */
 .glass-panel-strong {
   background-image: linear-gradient(
     145deg,
@@ -128,17 +144,12 @@ body {
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
-/* ============================
-   SOFT PANEL – Controls (Modus/Dauer, Switch, Tabs, etc.)
-   ============================ */
-
+/* Soft Panel – Settings, Mode/Dauer, etc. */
 .glass-panel-soft {
   position: relative;
   z-index: 0;
-
   background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(229, 231, 235, 0.9);
-
+  border: 1px solid rgba(229, 231, 235, 0.9); /* slate-200/90 */
   box-shadow:
     0 20px 54px rgba(255, 255, 255, 0.85),
     0 0 0 1px rgba(255, 255, 255, 0.92) inset;
@@ -147,6 +158,7 @@ body {
   border-radius: 22px;
 }
 
+/* elliptischer Schatten unter Soft-Panels */
 .glass-panel-soft::after {
   content: "";
   position: absolute;
@@ -163,9 +175,9 @@ body {
   pointer-events: none;
 }
 
-/* ============================
+/* =======================================
    Glas-Pill-Buttons (Basis + Varianten)
-   ============================ */
+   ======================================= */
 
 .glass-pill-btn {
   border-radius: 9999px;
@@ -192,7 +204,7 @@ body {
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.55);
 }
 
-/* neutrale Variante – z.B. für kleinere Buttons */
+/* Neutraler Pill, z.B. sekundäre Actions */
 .glass-pill-neutral {
   border-radius: 9999px;
   position: relative;
@@ -201,7 +213,6 @@ body {
 
   background-color: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(229, 231, 235, 0.9);
-
   box-shadow:
     0 20px 54px rgba(255, 255, 255, 0.85),
     0 0 0 1px rgba(255, 255, 255, 0.92) inset;
@@ -226,7 +237,7 @@ body {
     0 0 0 1px rgba(255, 255, 255, 0.95) inset;
 }
 
-/* stärkere Variante – z.B. für Play-Button oder Haupt-Controls */
+/* etwas stärkere Variante – z.B. für primäre Controls */
 .glass-pill-strong {
   background-color: rgba(255, 255, 255, 0.86);
   border-color: rgba(255, 255, 255, 0.96);
@@ -239,12 +250,10 @@ body {
 .glass-pill-primary {
   background-image: linear-gradient(135deg, #0ea5e9, #38bdf8);
   border-color: rgba(56, 189, 248, 0.95);
-
   color: #ffffff;
   box-shadow:
     0 22px 60px rgba(56, 189, 248, 0.75),
     0 0 0 1px rgba(255, 255, 255, 0.75) inset;
-
   position: relative;
   overflow: visible;
   z-index: 0;
@@ -328,9 +337,9 @@ body {
   pointer-events: none;
 }
 
-/* ============================
-   Slider – heller, „flüssiger“ Track
-   ============================ */
+/* =======================================
+   Slider – Dauer-Regler
+   ======================================= */
 
 .duration-slider {
   -webkit-appearance: none;
@@ -347,7 +356,7 @@ body {
   );
 }
 
-/* WebKit (Safari, Chrome, iOS) Thumb */
+/* WebKit Thumb */
 .duration-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -378,11 +387,11 @@ body {
   background: transparent;
 }
 
-/* ============================
-   Thumbnails & Swipe
-   ============================ */
+/* =======================================
+   Thumbnails & Swipe-Bereich
+   ======================================= */
 
-/* Glasiger Thumbnail-Container – ohne sichtbaren weißen Rahmen */
+/* Glasiger Thumbnail-Container – ohne sichtbaren Rahmen */
 .glass-thumb {
   position: relative;
   border-radius: 24px;
@@ -400,7 +409,7 @@ body {
   z-index: 0;
 }
 
-/* Weißer Glow, der über die Thumbnail-Box hinausgeht */
+/* Weißer Glow um die Thumbnail-Box */
 .thumb-shell::before {
   content: "";
   position: absolute;
@@ -412,7 +421,7 @@ body {
   z-index: -1;
 }
 
-/* Inneres Thumbnail – Maske + leichter eigener Schatten */
+/* Inneres Thumbnail – Maske + kleiner Schatten */
 .thumb-inner {
   border-radius: 24px;
   overflow: hidden;
@@ -429,7 +438,18 @@ body {
   border-radius: inherit;
 }
 
-/* Swipe-Transitions */
+/* Swipe-Area (horizontal) */
+.thumb-swipe-area {
+  touch-action: pan-y pan-x;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.thumb-track {
+  will-change: transform;
+}
+
+/* Thumbnail Paging Transitions */
 .thumb-page-next-enter-active,
 .thumb-page-next-leave-active,
 .thumb-page-prev-enter-active,
@@ -476,19 +496,9 @@ body {
   opacity: 0;
 }
 
-.thumb-swipe-area {
-  touch-action: pan-y pan-x;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.thumb-track {
-  will-change: transform;
-}
-
-/* ============================
+/* =======================================
    Modal-Fade-Transition
-   ============================ */
+   ======================================= */
 
 .modal-fade-enter-active,
 .modal-fade-leave-active {
@@ -509,11 +519,11 @@ body {
   transform: scale(1);
 }
 
-/* ============================
+/* =======================================
    Display-Transitions für SceneMedia
-   ============================ */
+   ======================================= */
 
-/* Gemeinsame Transition-Regel für alle Varianten */
+/* Shared Transition-Regeln */
 .scene-fade-enter-active,
 .scene-fade-leave-active,
 .scene-slide-enter-active,
@@ -537,7 +547,7 @@ body {
   will-change: opacity, transform, filter;
 }
 
-/* Leave-Element bleibt über dem Enter-Element */
+/* Leave-Element oben halten (kein „leerer“ Frame) */
 .scene-fade-leave-active,
 .scene-slide-leave-active,
 .scene-zoom-leave-active,
@@ -556,7 +566,6 @@ body {
   opacity: 0;
   transform: scale(1.01);
 }
-
 .scene-fade-enter-to,
 .scene-fade-leave-from {
   opacity: 1;
@@ -568,17 +577,14 @@ body {
   opacity: 0;
   transform: translateX(40px) scale(1.02);
 }
-
 .scene-slide-enter-to {
   opacity: 1;
   transform: translateX(0) scale(1);
 }
-
 .scene-slide-leave-from {
   opacity: 1;
   transform: translateX(0) scale(1);
 }
-
 .scene-slide-leave-to {
   opacity: 0;
   transform: translateX(-40px) scale(0.98);
@@ -589,38 +595,32 @@ body {
   opacity: 0;
   transform: scale(1.06);
 }
-
 .scene-zoom-enter-to {
   opacity: 1;
   transform: scale(1);
 }
-
 .scene-zoom-leave-from {
   opacity: 1;
   transform: scale(1);
 }
-
 .scene-zoom-leave-to {
   opacity: 0;
   transform: scale(0.96);
 }
 
-/* Pan */
+/* Pan (vertikal) */
 .scene-pan-enter-from {
   opacity: 0;
   transform: translateY(28px) scale(1.01);
 }
-
 .scene-pan-enter-to {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-
 .scene-pan-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-
 .scene-pan-leave-to {
   opacity: 0;
   transform: translateY(-28px) scale(0.99);
@@ -633,7 +633,6 @@ body {
   filter: blur(12px);
   transform: scale(1.01);
 }
-
 .scene-blur-enter-to,
 .scene-blur-leave-from {
   opacity: 1;
@@ -647,7 +646,6 @@ body {
   opacity: 0;
   transform: scale(1.02) rotate(3deg);
 }
-
 .scene-rotate-enter-to,
 .scene-rotate-leave-from {
   opacity: 1;
@@ -660,7 +658,6 @@ body {
   opacity: 0;
   transform: scale(1.08) translate3d(14px, 14px, 0);
 }
-
 .scene-kenburns-enter-to,
 .scene-kenburns-leave-from {
   opacity: 1;
@@ -673,9 +670,86 @@ body {
   opacity: 0;
   transform: scale(0.93);
 }
-
 .scene-pop-enter-to,
 .scene-pop-leave-from {
   opacity: 1;
   transform: scale(1);
+}
+
+/* =======================================
+   Micro-Interactions: Pills & Icon-Buttons
+   ======================================= */
+
+/* Tap-Animation für alle kleinen Pills / Tabs / Buttons */
+.pill-tap {
+  transition:
+    transform 130ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 130ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+  transform-origin: center;
+}
+
+.pill-tap:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.28);
+}
+
+/* Runde Icon-Controls (Prev / Play / Next) */
+.control-icon-btn {
+  position: relative;
+  border-radius: 9999px;
+  transform-origin: center;
+  transition:
+    transform 140ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 160ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+/* leichter Lift / Glow */
+.control-icon-btn:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 26px 7px rgba(255, 255, 255, 0.7);
+}
+
+/* Tap-Effekt */
+.control-icon-btn:active {
+  transform: translateY(1px) scale(0.9);
+  box-shadow: 0 0 18px 4px rgba(255, 255, 255, 0.5);
+}
+
+/* stärkerer Grund-Glow für Play/Pause */
+.control-icon-btn--primary {
+  box-shadow: 0 0 26px 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Puls für Play, wenn nicht playing */
+.control-icon-btn--pulse {
+  animation: control-pulse 2200ms ease-in-out infinite;
+}
+
+@keyframes control-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 22px 6px rgba(255, 255, 255, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 34px 10px rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* CTA-Pills (Upload / Löschen) mit stärkerem Tap-Gefühl */
+.cta-pill {
+  transition:
+    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+  transform-origin: center;
+}
+
+.cta-pill:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.45);
 }

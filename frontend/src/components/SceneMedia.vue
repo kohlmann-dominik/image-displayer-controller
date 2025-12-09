@@ -19,7 +19,7 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 const mediaClass = computed(() => {
   if (props.mode === "control-preview") {
     // Preview-Panel: Bild/Video möglichst vollständig sichtbar, leicht eingepasst
-    return "w-full h-full object-contain"
+    return "w-full h-full object-cover"
   }
 
   if (props.mode === "modal-preview") {

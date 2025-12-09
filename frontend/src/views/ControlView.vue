@@ -556,7 +556,7 @@ async function deleteSelectedScenes() {
         class="grid grid-cols-2 bg-white/40 backdrop-blur-xs p-1 rounded-2xl shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
       >
         <button
-          class="py-2 rounded-xl text-sm font-semibold transition"
+          class="pill-tap py-2 rounded-xl text-sm font-semibold"
           :class="
             activeTab === 'preview'
               ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
@@ -568,7 +568,7 @@ async function deleteSelectedScenes() {
         </button>
 
         <button
-          class="py-2 rounded-xl text-sm font-semibold transition"
+          class="pill-tap py-2 rounded-xl text-sm font-semibold"
           :class="
             activeTab === 'scenes'
               ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
@@ -600,7 +600,7 @@ async function deleteSelectedScenes() {
             </div>
 
             <span
-              class="max-w-[55%] truncate rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+              class="pill-tap max-w-[55%] truncate rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90"
             >
               {{
                 currentScene
@@ -633,9 +633,8 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="prevScene"
               aria-label="Vorherige Szene"
-              class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
-                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
-                  transition hover:bg-white/20 active:scale-95"
+              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
+                     shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center"
             >
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                 <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
@@ -647,14 +646,31 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="togglePlay"
               aria-label="Play/Pause"
-              class="w-11 h-11 rounded-full border border-white/80 bg-white/30  text-zinc-100 
-                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
-                  transition hover:bg-white/20 active:scale-95"
+              :class="[
+                'control-icon-btn control-icon-btn--primary w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 backdrop-blur-md flex items-center justify-center',
+                !state?.isPlaying ? 'control-icon-btn--pulse' : ''
+              ]"
             >
               <template v-if="state?.isPlaying">
                 <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
-                  <rect x="6" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
-                  <rect x="14" y="5" width="4" height="14" rx="1" stroke="currentColor" fill="currentColor" />
+                  <rect
+                    x="6"
+                    y="5"
+                    width="4"
+                    height="14"
+                    rx="1"
+                    stroke="currentColor"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="14"
+                    y="5"
+                    width="4"
+                    height="14"
+                    rx="1"
+                    stroke="currentColor"
+                    fill="currentColor"
+                  />
                 </svg>
               </template>
               <template v-else>
@@ -668,9 +684,8 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="nextScene"
               aria-label="Nächste Szene"
-              class="w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
-                  shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center 
-                  transition hover:bg-white/20 active:scale-95"
+              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
+                     shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center"
             >
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                 <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
@@ -694,7 +709,7 @@ async function deleteSelectedScenes() {
               >
                 <button
                   type="button"
-                  class="px-2.5 py-1 rounded-full transition"
+                  class="pill-tap px-2.5 py-1 rounded-full"
                   :class="
                     localMode === 'sequential'
                       ? 'bg-slate-900 text-white shadow-[0_8px_22px_rgba(15,23,42,0.45)]'
@@ -706,7 +721,7 @@ async function deleteSelectedScenes() {
                 </button>
                 <button
                   type="button"
-                  class="px-2.5 py-1 rounded-full transition"
+                  class="pill-tap px-2.5 py-1 rounded-full"
                   :class="
                     localMode === 'random'
                       ? 'bg-slate-900 text-white shadow-[0_8px_22px_rgba(15,23,42,0.45)]'
@@ -785,7 +800,7 @@ async function deleteSelectedScenes() {
             </span>
             <button
               type="button"
-              class="text-[10px] px-2 py-1 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+              class="pill-tap text-[10px] px-2 py-1 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-sm hover:bg-white/90"
               @click="toggleSelectAll"
             >
               {{ allSelected ? "Auswahl leeren" : "Alle auswählen" }}
@@ -806,7 +821,9 @@ async function deleteSelectedScenes() {
                 :key="pageIndex"
                 class="w-screen md:w-full flex-shrink-0 snap-start mb-4 mt-2"
               >
-                <div class="w-full px-4 mx-auto grid grid-cols-3 gap-x-4 sm:gap-x-4 gap-y-2 sm:gap-y-3 py-2 sm:py-3">
+                <div
+                  class="w-full px-4 mx-auto grid grid-cols-3 gap-x-4 sm:gap-x-4 gap-y-2 sm:gap-y-3 py-2 sm:py-3"
+                >
                   <div
                     v-for="scene in pageScenes"
                     :key="scene.id"
@@ -845,7 +862,6 @@ async function deleteSelectedScenes() {
                           </template>
 
                           <template v-else>
-                            <!-- :poster for faster loading scene on modal open -->
                             <video
                               :src="API_BASE + scene.url"
                               :poster="scene.thumbnailUrl ? API_BASE + scene.thumbnailUrl : undefined"
@@ -859,11 +875,12 @@ async function deleteSelectedScenes() {
                       </div>
                     </div>
 
+                    <!-- Auswahl-Button (Häkchen) -->
                     <button
                       type="button"
                       @click.stop="toggleSceneSelected(scene)"
                       :class="[
-                        'absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-xs flex items-center justify-center text-[14px] z-20 cursor-pointer transition active:scale-95',
+                        'pill-tap absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-xs flex items-center justify-center text-[14px] z-20 cursor-pointer',
                         isSceneSelected(scene)
                           ? 'bg-sky-400 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
                           : 'bg-white/70 border border-slate-300/85 text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80'
@@ -881,9 +898,10 @@ async function deleteSelectedScenes() {
                       </svg>
                     </button>
 
+                    <!-- Eck-Button (Preview) -->
                     <button
                       @click.stop="showPreview(scene)"
-                      class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-[14px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition"
+                      class="pill-tap absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 border border-slate-200/80 flex items-center justify-center text-[14px] text-slate-700 shadow-sm hover:bg-white/90"
                     >
                       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
                         <path
@@ -934,7 +952,7 @@ async function deleteSelectedScenes() {
           <button
             @click="openFileDialog"
             :disabled="uploading"
-            class="flex-1 h-12 glass-pill-btn glass-pill-primary text-sm font-semibold flex items-center justify-center"
+            class="flex-1 h-12 glass-pill-btn glass-pill-primary cta-pill text-sm font-semibold flex items-center justify-center"
           >
             {{ uploading ? "Upload…" : "Upload" }}
           </button>
@@ -942,7 +960,7 @@ async function deleteSelectedScenes() {
           <button
             @click="deleteSelectedScenes"
             :disabled="selectedCount === 0"
-            class="flex-1 h-12 glass-pill-btn glass-pill-danger text-sm font-semibold flex items-center justify-center"
+            class="flex-1 h-12 glass-pill-btn glass-pill-danger cta-pill text-sm font-semibold flex items-center justify-center"
           >
             Löschen ({{ selectedCount }})
           </button>
@@ -981,12 +999,12 @@ async function deleteSelectedScenes() {
       </div>
     </Teleport>
 
-   <!-- MODAL PREVIEW -->
+    <!-- MODAL PREVIEW -->
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
           v-if="previewScene"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/30 backdrop-blur-xs "
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/30 backdrop-blur-xs"
           @click.self="closePreview"
         >
           <div class="relative w-full h-full flex items-center justify-center">
@@ -999,7 +1017,7 @@ async function deleteSelectedScenes() {
                 class="absolute top-0 left-1/2 -translate-x-1/2 w-full flex items-start justify-between gap-3 pointer-events-none"
               >
                 <span
-                  class="max-w-[70%] truncate rounded-full bg-white/75 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 active:scale-95 transition pointer-events-auto"
+                  class="pill-tap max-w-[70%] truncate rounded-full bg-white/75 border border-slate-200/80 px-4 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90 pointer-events-auto"
                 >
                   {{
                     previewScene?.title ||
@@ -1009,7 +1027,7 @@ async function deleteSelectedScenes() {
                 </span>
 
                 <button
-                  class="w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto active:scale-95 transition"
+                  class="pill-tap w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto"
                   @click.stop="closePreview"
                 >
                   ✕
@@ -1017,9 +1035,7 @@ async function deleteSelectedScenes() {
               </div>
 
               <!-- Bild / Video mit gleichem Frame wie Header -->
-              <div
-                class="modal-media-frame mt-12 w-full overflow-hidden"
-              >
+              <div class="modal-media-frame mt-12 w-full overflow-hidden">
                 <SceneMedia
                   :scene="previewScene"
                   mode="modal-preview"
