@@ -633,8 +633,8 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="prevScene"
               aria-label="Vorherige Szene"
-              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 
-                     shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center"
+              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100 
+                     shadow-[0_0_22px_6px_rgba(255,255,255,0.35)]  flex items-center justify-center"
             >
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                 <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
@@ -647,7 +647,7 @@ async function deleteSelectedScenes() {
               @click.stop="togglePlay"
               aria-label="Play/Pause"
               :class="[
-                'control-icon-btn control-icon-btn--primary w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100 backdrop-blur-md flex items-center justify-center',
+                'control-icon-btn control-icon-btn--primary w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100 flex items-center justify-center',
                 !state?.isPlaying ? 'control-icon-btn--pulse' : ''
               ]"
             >
@@ -684,8 +684,8 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="nextScene"
               aria-label="Nächste Szene"
-              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/30 text-zinc-100  
-                     shadow-[0_0_22px_6px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center"
+              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100  
+                     shadow-[0_0_22px_6px_rgba(255,255,255,0.35)] flex items-center justify-center"
             >
               <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
                 <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
@@ -699,7 +699,7 @@ async function deleteSelectedScenes() {
           <div class="glass-panel-soft w-full rounded-[22px] px-4 py-3">
             <div class="flex items-center justify-between gap-3">
               <span
-                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+                class="text-[11px] uppercase tracking-[0.22em] text-white"
               >
                 Modus
               </span>
@@ -737,11 +737,11 @@ async function deleteSelectedScenes() {
             <div class="mt-5">
               <div class="flex items-center justify-between mb-1">
                 <span
-                  class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+                  class="text-[11px] uppercase tracking-[0.22em] text-white"
                 >
                   Dauer
                 </span>
-                <span class="text-[11px] text-slate-700">
+                <span class="text-[11px] text-white">
                   {{ durationSeconds }} s
                 </span>
               </div>
@@ -761,7 +761,7 @@ async function deleteSelectedScenes() {
 
             <div class="mt-5 flex items-center justify-between gap-3">
               <span
-                class="text-[11px] uppercase tracking-[0.22em] text-slate-700"
+                class="text-[11px] uppercase tracking-[0.22em] text-white"
               >
                 Videos in voller Länge
               </span>
@@ -880,10 +880,10 @@ async function deleteSelectedScenes() {
                       type="button"
                       @click.stop="toggleSceneSelected(scene)"
                       :class="[
-                        'pill-tap absolute top-2 right-12 w-8 h-8 rounded-full backdrop-blur-xs flex items-center justify-center text-[14px] z-20 cursor-pointer',
+                        'pill-tap absolute top-2 right-12 w-8 h-8 rounded-full flex items-center justify-center text-[14px] z-20 cursor-pointer',
                         isSceneSelected(scene)
-                          ? 'bg-sky-400 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
-                          : 'bg-white/70 border border-slate-300/85 text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/80'
+                          ? 'bg-sky-400/80 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
+                          : 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/90'
                       ]"
                     >
                       <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">

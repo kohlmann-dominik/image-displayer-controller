@@ -148,13 +148,12 @@ body::before {
 .glass-panel-soft {
   position: relative;
   z-index: 0;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(229, 231, 235, 0.9); /* slate-200/90 */
   box-shadow:
-    0 20px 54px rgba(255, 255, 255, 0.85),
-    0 0 0 1px rgba(255, 255, 255, 0.92) inset;
-  backdrop-filter: blur(16px) saturate(1.25);
-  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+    0 20px 54px rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+
   border-radius: 22px;
 }
 
@@ -186,8 +185,7 @@ body::before {
   box-shadow:
     0 16px 40px rgba(15, 23, 42, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.45) inset;
-  backdrop-filter: blur(20px) saturate(1.3);
-  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  
   color: #0f172a;
   display: flex;
   align-items: center;
@@ -246,71 +244,119 @@ body::before {
     0 0 0 1px rgba(255, 255, 255, 0.55) inset;
 }
 
-/* Primärer Glas-Button – Upload */
+/* ============================
+   NEU: Primärer Glas-Button – Upload,
+   im Stil deiner bg-sky-400/80 Pills
+   ============================ */
 .glass-pill-primary {
-  background-image: linear-gradient(135deg, #0ea5e9, #38bdf8);
-  border-color: rgba(56, 189, 248, 0.95);
-  color: #ffffff;
-  box-shadow:
-    0 22px 60px rgba(56, 189, 248, 0.75),
-    0 0 0 1px rgba(255, 255, 255, 0.75) inset;
   position: relative;
+  border-radius: 9999px;
+
+  background-image: none;
+  background-color: rgba(56, 189, 248, 0.7); /* sky-400/80 */
+  border-color: rgb(56, 189, 248);           /* sky-400 */
+
+  /* Doppelrand (weißer innerer Ring) + blauer Glow */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.78) inset, /* innerer weißer Ring */
+    0 22px 60px rgba(56, 189, 248, 0.6);       /* outer glow */
+
+  color: #ffffff;
   overflow: visible;
   z-index: 0;
+  transition:
+    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.glass-pill-primary:hover {
+  background-color: rgba(56, 189, 248, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+    0 26px 72px rgba(56, 189, 248, 0.8);
+}
+
+.glass-pill-primary:active {
+  transform: scale(0.96);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 1) inset,
+    0 18px 50px rgba(56, 189, 248, 0.7);
 }
 
 .glass-pill-primary:disabled {
   opacity: 0.6;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset,
+    0 18px 40px rgba(56, 189, 248, 0.4);
 }
 
-/* Danger-Variante – Löschen */
+/* ============================
+   NEU: Danger-Variante – Löschen,
+   gleicher Look in Rot
+   ============================ */
 .glass-pill-danger {
-  background-image: linear-gradient(135deg, #e11d48, #fb7185);
-  border-color: rgba(248, 113, 113, 0.95);
-  color: #ffffff;
-  box-shadow:
-    0 22px 60px rgba(159, 18, 57, 0.75),
-    0 0 0 1px rgba(254, 242, 242, 0.65) inset;
   position: relative;
+  border-radius: 9999px;
+
+  background-image: none;
+  background-color: rgba(244, 63, 94, 0.7); /* rose-500/80 */
+  border-color: rgb(244, 63, 94);           /* rose-500 */
+
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset, /* innerer weißer Ring */
+    0 22px 60px rgba(244, 63, 94, 0.6);       /* outer glow */
+
+  color: #ffffff;
   overflow: visible;
   z-index: 0;
+  transition:
+    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.glass-pill-danger:hover {
+  background-color: rgba(244, 63, 94, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+    0 26px 72px rgba(244, 63, 94, 0.8);
+}
+
+.glass-pill-danger:active {
+  transform: scale(0.96);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 1) inset,
+    0 18px 50px rgba(244, 63, 94, 0.7);
 }
 
 .glass-pill-danger:disabled {
   opacity: 0.4;
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset,
+    0 16px 38px rgba(244, 63, 94, 0.45);
 }
 
 /* elliptischer Schatten unter Upload / Löschen */
-.glass-pill-primary::after {
-  content: "";
-  position: absolute;
-  inset: 70% 10% -30%;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle at 50% 0%,
-    rgba(56, 189, 248, 0.55),
-    transparent 60%
-  );
-  opacity: 0.9;
-  filter: blur(16px);
-  z-index: -1;
-  pointer-events: none;
-}
-
+.glass-pill-primary::after,
 .glass-pill-danger::after {
-  content: "";
+ content: "";
   position: absolute;
-  inset: 70% 10% -30%;
+  
+  inset: 85% 18% -40%;
+
   border-radius: 9999px;
+
   background: radial-gradient(
-    circle at 50% 0%,
-    rgba(248, 113, 113, 0.55),
-    transparent 60%
+    circle at 50% 20%,  
+    rgba(255, 255, 255, 0.35),
+    transparent 65%
   );
-  opacity: 0.9;
-  filter: blur(16px);
+
+  opacity: 0.55;
+  filter: blur(22px);
   z-index: -1;
   pointer-events: none;
 }
