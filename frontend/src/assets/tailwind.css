@@ -12,26 +12,36 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
+  background-image:
+    url("./bg-blue-lines-wallpaper.png"),
+    linear-gradient(
+      to bottom,
+      #7fd3ff 0%,
+      #5ac5ff 40%,
+      #3eb7fd 70%,
+      #2f93f0 100%
+    );
 }
 
 /* Hier liegt jetzt dein Wallpaper + ein ganz leichter Gradient */
 body {
-  /* Fallback-Farbe falls das Bild mal nicht lädt    background-color: #38bdf8;
-*/
+  /* Fallback-Farbe falls das Bild mal nicht lädt */
 
-  /* Bild + halbtransparenter Gradient kombiniert */
+  /* Bild + Gradient kombiniert */
   background-image:
+    url("./bg-blue-lines-wallpaper.png"),
     linear-gradient(
       to bottom,
-      rgba(127, 211, 255, 0.45) 0%,   /* oben etwas stärker */
-      rgba(90, 197, 255, 0.35) 40%,
-      rgba(62, 183, 253, 0.30) 70%,
-      rgba(47, 147, 240, 0.25) 100%  /* unten schwächer */
-    ),
-    url("./bg-blue-lines-wallpaper.png");
+      #7fd3ff 0%,
+      #5ac5ff 40%,
+      #3eb7fd 70%,
+      #2f93f0 100%
+    );
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+
+  /* wichtig für iOS, damit das Bild auch hinter der Statusbar gerendert wird */
   background-attachment: scroll;
 }
 
