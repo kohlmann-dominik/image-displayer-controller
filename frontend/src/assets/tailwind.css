@@ -13,7 +13,11 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  background-color: #04a9ff;
+    background-image: url("./bg-blue-lines-wallpaper.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 #app {
