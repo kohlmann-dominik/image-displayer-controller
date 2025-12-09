@@ -6,13 +6,14 @@
 
 /* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
 
-html,
-body {
+html {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
-  background-color:
+
+  /* Gradient, der zu deinem Wallpaper passt */
+  background:
     linear-gradient(
       to bottom,
       #7fd3ff 0%,
@@ -22,17 +23,22 @@ body {
     );
 }
 
-/* Hier liegt jetzt dein Wallpaper + ein ganz leichter Gradient */
+/* 2) body: dein Wallpaper */
 body {
-  /* Fallback-Farbe falls das Bild mal nicht lädt */
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 
-  background-image:
-    url("./bg-blue-lines-wallpaper.png");
+  /* Fallback-Farbe falls das Bild mal nicht lädt */
+  /* background-color: #38bdf8;  // optional */
+
+  background-image: url("./bg-blue-lines-wallpaper.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
-  /* wichtig für iOS, damit das Bild auch hinter der Statusbar gerendert wird */
+  /* wichtig für iOS, damit es überhaupt hinter der Statusbar gerendert wird */
   background-attachment: scroll;
 }
 
@@ -44,7 +50,7 @@ body {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  background: transparent; /* KEIN eigenes Bild mehr */
+  background: transparent;
 }
 
 .control-bg::before {
