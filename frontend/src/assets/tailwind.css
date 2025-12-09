@@ -21,14 +21,7 @@ body {
 
   /* Erst das Bild (hinten), dann der halbtransparente Gradient (oben) */
   background-image:
-    url("./bg-blue-lines-wallpaper.png"),
-    linear-gradient(
-      to bottom,
-      rgba(127, 211, 255, 0.9) 0%,   /* Statusbar-Zone: hell & leicht milchig */
-      rgba(90, 197, 255, 0.7) 20%,  /* geht ins bekannte Hellblau über */
-      rgba(62, 183, 253, 0.4) 45%,  /* weiter ausblenden */
-      rgba(47, 147, 240, 0.0) 70%   /* ab hier praktisch nur noch das Bild */
-    );
+    url("./bg-blue-lines-wallpaper.png");
 
   background-size: cover;
   background-position: center;
