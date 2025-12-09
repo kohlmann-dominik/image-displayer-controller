@@ -30,6 +30,7 @@ body {
 #app {
   min-height: 100dvh;
   min-width: 100dvw;
+  padding-top: 0;
    /* Inhalt nicht unter die Statusbar schieben padding-top: env(safe-area-inset-top);*/
 }
 
@@ -40,12 +41,12 @@ body {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  background: transparent;
-   background-image: url("./bg-blue-lines-wallpaper-top65ccfe.png");
+  background-image: url("./bg-blue-lines-wallpaper-top65ccfe.png");
   background-size: cover;          /* füllt den Screen */
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;
   background-attachment: scroll;   /* wichtig für iOS */
+  padding-top: env(safe-area-inset-top);
 }
 
 .control-bg::before {
