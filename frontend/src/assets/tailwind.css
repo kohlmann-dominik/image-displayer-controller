@@ -13,7 +13,6 @@ body {
   height: 100%;
   width: 100%;
   background-color:
-    url("./bg-blue-lines-wallpaper.png"),
     linear-gradient(
       to bottom,
       #7fd3ff 0%,
@@ -27,16 +26,8 @@ body {
 body {
   /* Fallback-Farbe falls das Bild mal nicht lädt */
 
-  /* Bild + Gradient kombiniert */
   background-image:
-    url("./bg-blue-lines-wallpaper.png"),
-    linear-gradient(
-      to bottom,
-      #7fd3ff 0%,
-      #5ac5ff 40%,
-      #3eb7fd 70%,
-      #2f93f0 100%
-    );
+    url("./bg-blue-lines-wallpaper.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
