@@ -4,8 +4,6 @@
   --glass-base: 94 234 212;
 }
 
-/* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
-
 html,
 body {
   margin: 0;
@@ -14,21 +12,42 @@ body {
   width: 100%;
 }
 
-/* Body-Hintergrund ist das, was in der Statusbar sichtbar wird */
 body {
   background-image: url("./bg-blue-lines-wallpaper.png");
   background-size: contain;
-  background-position: center top; /* oben ansetzen, damit das Motiv in der Statusbar gut wirkt */
+  background-position: center top;
   background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
-/* App-Root */
+/* Verlaufs-Blend für obere Safe-Area + Header */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: calc(env(safe-area-inset-top) + 160px);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    #6fd8ff 0%,
+    rgba(47, 164, 255, 0.75) 55%,
+    rgba(47, 164, 255, 0) 100%
+  );
+}
+
+/* App-Root über den Overlay legen */
 #app {
+  position: relative;
+  z-index: 1;
   min-height: 100dvh;
   min-width: 100dvw;
-  padding-top: env(safe-area-inset-top); /* Inhalt nicht unter den Text der Statusbar schieben */
+  padding-top: env(safe-area-inset-top);
 }
+
+
+
+/* ===== PAGE-HINTERGRUND – global auch für die Statusbar ===== */
 
 .control-bg {
   position: relative;
