@@ -13,9 +13,8 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  /* Hintergrund direkt auf Root legen, damit er bis in die Statusbar „durchscheinen“ kann */
-  background-color: #020617; /* sehr dunkles Blau als Fallback */
-  background-image: url("./bg-blue-lines-wallpaper.png");
+  background-color: transparent;
+    background-image: url("./bg-blue-lines-wallpaper.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -34,8 +33,7 @@ body {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  /* optional: etwas Platz für die iOS-Safe-Area oben, damit Inhalt nicht in die Notch rutscht */
-  padding-top: env(safe-area-inset-top);
+
 }
 
 .control-bg::before {
