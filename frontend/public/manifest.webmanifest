@@ -2,7 +2,7 @@
   "name": "Image Displayer Controller",
   "short_name": "Display Controller",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#38bdf8",
   "theme_color": "#38bdf8",
   "icons": [

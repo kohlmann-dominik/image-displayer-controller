@@ -21,10 +21,11 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
+/* NOT ALL CBG_COLORS WILL WORK FOR STATUS BAR - TEST IN SAFARI BROWSER ON MAC */
 body {
   margin: 0;
   padding: 0;
-  background-color: blue;
+  background-color: rgb(24, 144, 191);
   min-height: 100dvh;
 }
 
