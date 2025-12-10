@@ -17,7 +17,7 @@ html {
   padding: 0;
   height: 100%;
   overscroll-behavior-y: none;
-  background-color: #38bdf8;
+  background-color: #2b7fff;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -25,7 +25,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background-color: rgb(24, 144, 191);
+  background-color: #2b7fff;
   min-height: 100dvh;
 }
 
@@ -37,7 +37,7 @@ body::before {
   left: 0;
   right: 0;
   height: env(safe-area-inset-top);
-  background: #38bdf8;
+  background: #2b7fff;
   z-index: 9999;
   pointer-events: none;
 }
@@ -247,15 +247,15 @@ body::before {
 
 /* ============================
    NEU: Primärer Glas-Button – Upload,
-   im Stil deiner bg-sky-400/80 Pills
+   im Stil deiner bg-blue-500/80 Pills
    ============================ */
 .glass-pill-primary {
   position: relative;
   border-radius: 9999px;
 
   background-image: none;
-  background-color: rgba(56, 189, 248, 0.7); /* sky-400/80 */
-  border-color: rgb(56, 189, 248);           /* sky-400 */
+  background-color: rgba(43, 127, 255,0.7); /* bg-blue-500/70 */
+  border-color: rgb(43, 127, 255);           /* bg-blue-500 */
 
   /* Doppelrand (weißer innerer Ring) + blauer Glow */
   box-shadow:
@@ -396,8 +396,8 @@ body::before {
   width: 100%;
   background: linear-gradient(
     to right,
-    #38bdf8 0%,
-    #38bdf8 var(--duration-progress, 50%),
+    #2b7fff 0%,
+    #2b7fff var(--duration-progress, 50%),
     #e5e7eb var(--duration-progress, 50%),
     #e5e7eb 100%
   );
@@ -411,7 +411,7 @@ body::before {
   height: 18px;
   border-radius: 9999px;
   background: #ffffff;
-  border: 2px solid #38bdf8;
+  border: 2px solid #2b7fff;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
   cursor: pointer;
 }
@@ -422,7 +422,7 @@ body::before {
   height: 18px;
   border-radius: 9999px;
   background: #ffffff;
-  border: 2px solid #38bdf8;
+  border: 2px solid #2b7fff;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
   cursor: pointer;
 }

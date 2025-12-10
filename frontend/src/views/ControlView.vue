@@ -773,7 +773,7 @@ async function deleteSelectedScenes() {
                   class="sr-only peer"
                 />
                 <div
-                  class="w-11 h-6 bg-slate-200 peer-checked:bg-sky-400 rounded-full transition-colors"
+                  class="w-11 h-6 bg-slate-200 peer-checked:bg-blue-500 rounded-full transition-colors"
                 ></div>
                 <div
                   class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-[0_4px_10px_rgba(15,23,42,0.35)] peer-checked:translate-x-5 transition-transform"
@@ -837,7 +837,7 @@ async function deleteSelectedScenes() {
                       :class="[
                         'relative rounded-[18px] overflow-visible m-[4px] bg-white/60 shadow-[0_6px_18px_rgba(255,255,255,0.48)]',
                         scene.id === state?.currentSceneId
-                          ? 'ring-3 ring-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
+                          ? 'ring-3 ring-blue-500 shadow-[0_0_0_1px_rgba(56,189,248,0.65)]'
                           : ''
                       ]"
                     >
@@ -882,7 +882,7 @@ async function deleteSelectedScenes() {
                       :class="[
                         'pill-tap absolute top-2 right-12 w-8 h-8 rounded-full flex items-center justify-center text-[14px] z-20 cursor-pointer',
                         isSceneSelected(scene)
-                          ? 'bg-sky-400/80 border border-sky-400 text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
+                          ? 'bg-blue-500/80 border border-blue-500  text-white shadow-[0_18px_40px_rgba(56,189,248,0.65)]'
                           : 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/90'
                       ]"
                     >
@@ -987,7 +987,7 @@ async function deleteSelectedScenes() {
           class="pointer-events-auto glass-panel-soft rounded-full px-4 py-2 flex items-center gap-2 text-[11px] text-slate-800 shadow-[0_14px_30px_rgba(15,23,42,0.3)] bg-white/90 border border-slate-200/80"
         >
           <span
-            class="inline-block w-3 h-3 rounded-full border-2 border-sky-400 border-t-transparent animate-spin"
+            class="inline-block w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"
           ></span>
           <span class="uppercase tracking-[0.16em] font-semibold">
             Upload läuft

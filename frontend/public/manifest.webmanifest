@@ -3,8 +3,8 @@
   "short_name": "Display Controller",
   "start_url": "/",
   "display": "fullscreen",
-  "background_color": "#38bdf8",
-  "theme_color": "#38bdf8",
+  "background_color": "#2b7fff",
+  "theme_color": "#2b7fff",
   "icons": [
     {
       "src": "/icons/app-icon-192.png",
