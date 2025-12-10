@@ -17,7 +17,6 @@ html {
   padding: 0;
   height: 100%;
   overscroll-behavior-y: none;
-  background-color: #2b7fff;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -25,7 +24,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background-color: #2b7fff;
+  background: #287ffd;
   min-height: 100dvh;
 }
 
@@ -37,7 +36,7 @@ body::before {
   left: 0;
   right: 0;
   height: env(safe-area-inset-top);
-  background: #2b7fff;
+  background: #287ffd;;
   z-index: 9999;
   pointer-events: none;
 }
@@ -57,7 +56,7 @@ body::before {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  background-image: url("./bg-blue-lines-wallpaper-sky400-top.png");
+  background-image: url("./extended.png");
   background-size: cover;          /* füllt den Screen */
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;
@@ -71,12 +70,7 @@ body::before {
   pointer-events: none;
   z-index: -1;
 
-  /* soften Licht-Effekt */
-  background:
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
-    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.25), transparent 60%);
-  mix-blend-mode: soft-light;
-  opacity: 0.9;
+
 }
 
 /* Globaler „Teppich"-Schatten unter der gesamten Control-Spalte */
