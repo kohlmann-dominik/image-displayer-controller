@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue"
 import { useRouter } from "vue-router"
 import type { PlayerState, Scene } from "../types"
 import { API_BASE } from "../config"
@@ -116,6 +116,71 @@ async function loadScenes(): Promise<void> {
   }
 }
 
+const resolveUrl = (raw?: string) => {
+  if (!raw) {
+    return ""
+  }
+
+  return raw.startsWith("http") ? raw : `${API_BASE}${raw}`
+}
+
+// Lokale Next-Scene-Berechnung (analog zur Control/Backend-Logik)
+function computeNextSceneLocal(): Scene | null {
+  const s = state.value
+  const list = visibleScenes.value
+
+  if (!s || list.length === 0) {
+    return null
+  }
+
+  const mode = s.mode
+  const currentId = s.currentSceneId
+  const currentIndex = list.findIndex((sc) => sc.id === currentId)
+
+  if (mode === "random") {
+    if (list.length === 1) {
+      return list[0] ?? null
+    }
+
+    let idx = currentIndex
+    while (idx === currentIndex || idx === -1) {
+      idx = Math.floor(Math.random() * list.length)
+    }
+
+    return list[idx] ?? null
+  }
+
+  // sequenziell
+  if (currentIndex === -1) {
+    return list[0] ?? null
+  }
+
+  const nextIndex = (currentIndex + 1) % list.length
+  return list[nextIndex] ?? null
+}
+
+// Nur Bilder vorladen (Videos sind zu groß)
+function preloadNextScene(): void {
+  const next = computeNextSceneLocal()
+  if (!next) {
+    return
+  }
+
+  if (next.type !== "image") {
+    return
+  }
+
+  const raw = next.optimizedUrl || next.url
+  if (!raw) {
+    return
+  }
+
+  const src = resolveUrl(raw)
+
+  const img = new Image()
+  img.src = src
+}
+
 // --- WS-STATE ---
 function handleStateUpdate(s: PlayerState): void {
   state.value = { ...s }
@@ -154,6 +219,14 @@ onBeforeUnmount(() => {
   }
 })
 
+watch(
+  () => [state.value?.currentSceneId, state.value?.mode, visibleScenes.value.length],
+  () => {
+    preloadNextScene()
+  },
+  { immediate: true },
+)
+
 function handleRequestNext(): void {
   // Nur für Videos mit playVideosFullLength (wird in SceneMedia gesteuert)
   sendMessage({ type: "NEXT_SCENE" })
@@ -175,9 +248,8 @@ function goBackToControl(): void {
         v-if="showBackButton"
         type="button"
         class="absolute bottom-4 right-4 z-50 w-11 h-11 rounded-full
-               bg-white/85 border border-slate-200/80
-               shadow-[0_16px_40px_rgba(15,23,42,0.65)]
-               backdrop-blur-md flex items-center justify-center
+               bg-white/50 border border-slate-200/65
+               shadow-sm backdrop-blur-md flex items-center justify-center
                text-slate-900 active:scale-95 transition"
         @click.stop="goBackToControl"
         aria-label="Zurück zur Control View"

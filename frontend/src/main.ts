@@ -4,7 +4,24 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.42" // neue Version setzen
+const APP_VERSION = "0.4.43" // neue Version setzen
+
+let lastTouchEnd = 0
+
+document.addEventListener(
+  "touchend",
+  (event) => {
+    const now = Date.now()
+
+    // Wenn zwei Touchend-Events sehr nah beieinander liegen → Double-Tap
+    if (now - lastTouchEnd <= 300) {
+      event.preventDefault()
+    }
+
+    lastTouchEnd = now
+  },
+  { passive: false },
+)
 
 const url = new URL(window.location.href)
 

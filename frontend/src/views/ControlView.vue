@@ -34,6 +34,11 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const totalUploadFiles = ref(0)
 const uploadedFilesCount = ref(0)
 
+// Control Button Handling
+const isPrevPressed = ref(false)
+const isPlayPressed = ref(false)
+const isNextPressed = ref(false)
+
 // reine Text-Helfer für die Pill
 const uploadProgressText = computed(() => {
   if (!uploading.value || totalUploadFiles.value === 0) {
@@ -543,20 +548,20 @@ async function deleteSelectedScenes() {
           <!-- Info-Bar über der Live-Preview -->
           <div class="flex items-center justify-between gap-3 mb-2 px-1">
             <div
-              class="flex flex-col rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-slate-700 shadow-sm"
+              class="glass-panel-soft flex flex-col rounded-full bg-white/90 border border-slate-200/60 px-3 py-2 text-white shadow-[0_25px_60px_rgba(15,23,42,0.12)]"
             >
               <span
-                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-800"
+                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-white"
               >
                 Live Preview
               </span>
-              <span class="text-[10px] text-slate-800 mt-0.5">
+              <span class="text-[10px] text-white mt-0.5">
                 {{ visibleCount }} aktive Szene(n)
               </span>
             </div>
-
+<!--
             <span
-              class="pill-tap max-w-[55%] truncate rounded-full bg-white/70 border border-slate-200/80 px-3 py-2 text-[11px] text-slate-700 shadow-sm hover:bg-white/90"
+              class="glass-panel-soft max-w-[55%] truncate rounded-full text-xs bg-white/90 border border-slate-200/60 px-3 py-2 text-white shadow-[0_25px_60px_rgba(15,23,42,0.12)] hover:bg-white/90"
             >
               {{
                 currentScene
@@ -564,36 +569,59 @@ async function deleteSelectedScenes() {
                   : "Keine Szene ausgewählt"
               }}
             </span>
+-->
           </div>
-
           <!-- Preview-Panel -->
           <div
-            class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
+            class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center shadow-[0_40px_80px_rgba(30,58,138,0.18)]"
           >
-            <div class="relative w-full h-full flex items-center justify-center"
+            <div
+              class="relative w-full h-full flex items-center justify-center"
               @click="handlePreviewTap"
               @touchstart.passive="handlePreviewTap"
             >
-              <SceneMedia
-                v-if="currentScene"
-                :scene="currentScene"
-                mode="control-preview"
-                :play-videos-full-length="!!state?.playVideosFullLength"
-                @requestNext="nextScene"
-                @requestFullscreenDisplay="goToDisplayView"
-                class="absolute inset-0 flex items-center justify-center"
-              />
+              <Transition name="scene-fade-fast" mode="out-in">
+                <SceneMedia
+                  v-if="currentScene"
+                  :key="currentScene.id"
+                  :scene="currentScene"
+                  mode="control-preview"
+                  :play-videos-full-length="!!state?.playVideosFullLength"
+                  @requestNext="nextScene"
+                  @requestFullscreenDisplay="goToDisplayView"
+                  class="absolute inset-0 flex items-center justify-center"
+                />
+              </Transition>
+
+              <div
+                v-if="!currentScene"
+                class="text-white/70 text-xs"
+              >
+                Keine Szene ausgewählt
+              </div>
             </div>
           </div>
-
           <!-- CONTROL BUTTONS: Prev / Play / Next -->
           <div class="mt-4 flex items-center justify-center gap-3">
             <!-- PREVIOUS -->
             <button
               @click.stop="prevScene"
+              @pointerdown="isPrevPressed = true"
+              @pointerup="isPrevPressed = false"
+              @pointerleave="isPrevPressed = false"
               aria-label="Vorherige Szene"
-              class="pill-tap w-11 h-11 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] flex items-center justify-center
-                     transition-transform duration-150 active:scale-95"
+              :class="[
+                'pill-tap w-11 h-11 rounded-full bg-white/40 border border-slate-200/65 text-white flex items-center justify-center',
+                'transition-transform duration-300 ease-out transform-gpu',
+                // Default / Hover
+                !isPrevPressed
+                  ? 'shadow-[0_10px_24px_rgba(30,58,138,0.18)] hover:shadow-[0_14px_30px_rgba(30,58,138,0.24)]'
+                  : '',
+                // Press: ganz leicht kleiner + etwas dichterer Shadow
+                isPrevPressed
+                  ? 'scale-98 shadow-[0_9px_20px_rgba(30,58,138,0.3)]'
+                  : ''
+              ]"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                 <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
@@ -604,32 +632,33 @@ async function deleteSelectedScenes() {
             <!-- PLAY / PAUSE -->
             <button
               @click.stop="togglePlay"
+              @pointerdown="isPlayPressed = true"
+              @pointerup="isPlayPressed = false"
+              @pointerleave="isPlayPressed = false"
               aria-label="Play/Pause"
               :class="[
-                'pill-tap w-12 h-12 rounded-full border flex items-center justify-center transition-transform duration-150 active:scale-95',
+                'pill-tap w-12 h-12 rounded-full border flex items-center justify-center',
+                'transition-transform duration-300 ease-out transform-gpu',
+                // Basis-Look je nach Zustand
                 state?.isPlaying
-                  ? 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/90'
-                  : 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.24)]'
+                  ? 'bg-white/40 border-slate-200/65 text-white shadow-[0_14px_32px_rgba(56,189,248,0.55)]'
+                  : 'bg-white/40 border-slate-200/65 text-white shadow-[0_10px_24px_rgba(30,58,138,0.18)]',
+                // Hover: nur etwas mehr Glow
+                !isPlayPressed
+                  ? (state?.isPlaying
+                      ? 'hover:shadow-[0_18px_40px_rgba(56,189,248,0.7)]'
+                      : 'hover:shadow-[0_14px_30px_rgba(30,58,138,0.24)]')
+                  : '',
+                // Press: minimal kleiner, kompakterer Glow
+                isPlayPressed
+                  ? 'scale-99 shadow-[0_12px_28px_rgba(56,189,248,0.8)]'
+                  : ''
               ]"
             >
               <template v-if="state?.isPlaying">
                 <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
-                  <rect
-                    x="6"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="14"
-                    y="5"
-                    width="4"
-                    height="14"
-                    rx="1"
-                    fill="currentColor"
-                  />
+                  <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
                 </svg>
               </template>
               <template v-else>
@@ -642,20 +671,31 @@ async function deleteSelectedScenes() {
             <!-- NEXT -->
             <button
               @click.stop="nextScene"
+              @pointerdown="isNextPressed = true"
+              @pointerup="isNextPressed = false"
+              @pointerleave="isNextPressed = false"
               aria-label="Nächste Szene"
-              class="pill-tap w-11 h-11 rounded-full  bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] flex items-center justify-center
-                     transition-transform duration-150 active:scale-95"
+              :class="[
+                'pill-tap w-11 h-11 rounded-full bg-white/40 border border-slate-200/65 text-white flex items-center justify-center',
+                'transition-transform duration-300 ease-out transform-gpu',
+                !isNextPressed
+                  ? 'shadow-[0_10px_24px_rgba(30,58,138,0.18)] hover:shadow-[0_14px_30px_rgba(30,58,138,0.24)]'
+                  : '',
+                isNextPressed
+                  ? 'scale-98 shadow-[0_9px_20px_rgba(30,58,138,0.3)]'
+                  : ''
+              ]"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                 <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
               </svg>
             </button>
           </div>
-        </div>
 
+        </div>
         <!-- SETTINGS PANEL -->
         <div class="pt-6">
-          <div class="glass-panel-soft w-full rounded-[22px] px-4 py-3">
+          <div class="glass-panel-soft w-full rounded-[22px] px-4 py-3 shadow-[0_25px_60px_rgba(15,23,42,0.12)]">
             <div class="flex items-center justify-between gap-3">
               <span
                 class="text-[11px] uppercase tracking-[0.22em] text-white"
@@ -759,7 +799,7 @@ async function deleteSelectedScenes() {
             </span>
             <button
               type="button"
-              class="pill-tap text-[10px] px-2 py-1 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-sm hover:bg-white/90"
+              class="glass-panel-soft rounded-full px-2 py-1 bg-transparent border border-slate-200/60 text-[10px] text-white shadow-[0_25px_60px_rgba(15,23,42,0.12)] hover:bg-white/90"
               @click="toggleSelectAll"
             >
               {{ allSelected ? "Auswahl leeren" : "Alle auswählen" }}
@@ -977,7 +1017,7 @@ async function deleteSelectedScenes() {
                 </span>
 
                 <button
-                  class="pill-tap w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-sm text-slate-700 shadow-sm hover:bg-white pointer-events-auto"
+                  class="pill-tap w-9 h-9 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-xl text-slate-700 shadow-sm hover:bg-white pointer-events-auto"
                   @click.stop="closePreview"
                 >
                   ✕

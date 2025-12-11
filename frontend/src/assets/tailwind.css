@@ -247,44 +247,40 @@ body::before {
   position: relative;
   border-radius: 9999px;
 
-  background-image: none;
-  background-color: rgba(43, 127, 255,0.7); /* bg-blue-500/70 */
-  border-color: rgb(43, 127, 255);           /* bg-blue-500 */
+  /* Helleres Glas */
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
 
-  /* Doppelrand (weißer innerer Ring) + blauer Glow */
+  /* Blau-Tint (viel transparenter als vorher) */
+  background-color: rgba(43, 127, 255, 0.22);
+
+  /* Zweifarbiger Doppelrand */
+  border: 1.5px solid rgba(43, 127, 255, 0.55); /* äußerer Rand farbig */
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.78) inset, /* innerer weißer Ring */
-    0 22px 60px rgba(56, 189, 248, 0.6);       /* outer glow */
+    0 0 0 1px rgba(255, 255, 255, 0.35) inset, /* innerer weiß-blauer Ring */
+    0 14px 38px rgba(43, 127, 255, 0.55);      /* soft blue glow */
 
-  color: #ffffff;
-  overflow: visible;
-  z-index: 0;
+  color: white;
+
   transition:
-    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
-    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
-    background-color 150ms ease-out,
-    border-color 150ms ease-out;
+    transform 160ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 220ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 200ms ease-out;
 }
 
 .glass-pill-primary:hover {
-  background-color: rgba(56, 189, 248, 0.9);
+  background-color: rgba(43, 127, 255, 0.30);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
-    0 26px 72px rgba(56, 189, 248, 0.8);
+    0 0 0 1px rgba(255, 255, 255, 0.45) inset,
+    0 18px 48px rgba(43, 127, 255, 0.70);
 }
 
 .glass-pill-primary:active {
-  transform: scale(0.96);
+  transform: translateY(1px) scale(0.96);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 1) inset,
-    0 18px 50px rgba(56, 189, 248, 0.7);
-}
-
-.glass-pill-primary:disabled {
-  opacity: 0.6;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset,
-    0 18px 40px rgba(56, 189, 248, 0.4);
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 10px 28px rgba(43, 127, 255, 0.45);
 }
 
 /* ============================
@@ -296,42 +292,40 @@ body::before {
   border-radius: 9999px;
 
   background-image: none;
-  background-color: rgba(244, 63, 94, 0.7); /* rose-500/80 */
+  background-color: rgba(244, 63, 94, 0.5); /* rose-500/80 */
   border-color: rgb(244, 63, 94);           /* rose-500 */
 
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset, /* innerer weißer Ring */
-    0 22px 60px rgba(244, 63, 94, 0.6);       /* outer glow */
+    0 0 0 1px rgba(255, 200, 210, 0.45) inset, /* innerer pink-weißer Ring */
+    0 14px 38px rgba(244, 63, 94, 0.55);       /* farbiger Glow */
 
-  color: #ffffff;
-  overflow: visible;
-  z-index: 0;
+  color: white;
+
   transition:
-    transform 150ms cubic-bezier(0.19, 1, 0.22, 1),
-    box-shadow 150ms cubic-bezier(0.19, 1, 0.22, 1),
-    background-color 150ms ease-out,
-    border-color 150ms ease-out;
+    transform 160ms cubic-bezier(0.19, 1, 0.22, 1),
+    box-shadow 220ms cubic-bezier(0.19, 1, 0.22, 1),
+    background-color 200ms ease-out;
 }
 
 .glass-pill-danger:hover {
-  background-color: rgba(244, 63, 94, 0.92);
+  background-color: rgba(244, 63, 94, 0.30);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
-    0 26px 72px rgba(244, 63, 94, 0.8);
+    0 0 0 1px rgba(255, 210, 220, 0.55) inset,
+    0 18px 48px rgba(244, 63, 94, 0.70);
 }
 
 .glass-pill-danger:active {
-  transform: scale(0.96);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 1) inset,
-    0 18px 50px rgba(244, 63, 94, 0.7);
-}
+  transform: translateY(1px) scale(0.96);
 
-.glass-pill-danger:disabled {
-  opacity: 0.4;
+  /* WICHTIG: stärker deckend beim Drücken */
+  background-color: rgba(244, 63, 94);
+
+  /* Innere Lichtkante behalten, aber dunkler */
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset,
-    0 16px 38px rgba(244, 63, 94, 0.45);
+    0 0 0 1px rgba(244, 63, 94, 0.75) inset,
+    0 10px 28px rgba(244, 63, 94, 0.60);
+
+  border-color: rgba(244, 63, 94, 0.85);
 }
 
 /* elliptischer Schatten unter Upload / Löschen */
@@ -609,6 +603,25 @@ body::before {
 }
 .scene-fade-enter-to,
 .scene-fade-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scene-fade-fast-enter-active,
+.scene-fade-fast-leave-active {
+  transition:
+    opacity 260ms ease-out,
+    transform 260ms ease-out;
+}
+
+.scene-fade-fast-enter-from,
+.scene-fade-fast-leave-to {
+  opacity: 0;
+  transform: scale(0.99);
+}
+
+.scene-fade-fast-enter-to,
+.scene-fade-fast-leave-from {
   opacity: 1;
   transform: scale(1);
 }
