@@ -104,8 +104,27 @@ const visibleCount = computed(() => visibleScenes.value.length)
 // --- TIMER für Auto-Wechsel ---
 const timerId = ref<number | null>(null)
 
-function goToDisplayFullscreen(): void {
+function goToDisplayView(): void {
   router.push("/display")
+}
+
+const lastPreviewTapTime = ref<number | null>(null)
+
+function handlePreviewTap(): void {
+  const now = Date.now()
+
+  // 2. Tap innerhalb von 350 ms → als Double-Tap werten
+  if (lastPreviewTapTime.value !== null && now - lastPreviewTapTime.value < 350) {
+    lastPreviewTapTime.value = null
+    goToDisplayView()
+    return
+  }
+
+  // erster Tap → Zeit merken
+  lastPreviewTapTime.value = now
+
+  // Optional: hier kannst du noch andere Sachen machen,
+  // z. B. Controls einblenden etc.
 }
 
 function clearTimer() {
@@ -621,8 +640,10 @@ async function deleteSelectedScenes() {
                 mode="control-preview"
                 :play-videos-full-length="!!state?.playVideosFullLength"
                 @requestNext="nextScene"
-                @requestFullscreenDisplay="goToDisplayFullscreen"
+                @requestFullscreenDisplay="goToDisplayView"
                 class="absolute inset-0 flex items-center justify-center"
+                @click="handlePreviewTap"
+                @touchstart.passive="handlePreviewTap"
               />
             </div>
           </div>

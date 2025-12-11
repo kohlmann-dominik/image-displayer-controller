@@ -16,27 +16,40 @@ const error = ref<string | null>(null)
 const timerId = ref<number | null>(null)
 let unsubscribe: (() => void) | null = null
 
-const visibleScenes = computed(() =>
-  scenes.value.filter((s) => s.visible ?? true),
-)
+const visibleScenes = computed(() => {
+  return scenes.value.filter((s) => {
+    if (s.visible === undefined || s.visible === null) {
+      return true
+    }
+
+    return s.visible
+  })
+})
 
 const currentScene = computed<Scene | null>(() => {
-  if (!state.value) {
+  if (state.value === null) {
     return null
   }
 
-  return (
-    visibleScenes.value.find(
-      (s) => s.id === state.value!.currentSceneId,
-    ) ?? null
-  )
+  const found = visibleScenes.value.find((s) => {
+    return s.id === state.value!.currentSceneId
+  })
+
+  if (!found) {
+    return null
+  }
+
+  return found
 })
 
 // --- Back-Button Sichtbarkeit + Timer ---
 const showBackButton = ref(true)
 const hideBackButtonTimeoutId = ref<number | null>(null)
 
-function scheduleHideBackButton() {
+// Double-Tap / Double-Click
+const lastTapTime = ref<number | null>(null)
+
+function scheduleHideBackButton(): void {
   if (hideBackButtonTimeoutId.value !== null) {
     window.clearTimeout(hideBackButtonTimeoutId.value)
     hideBackButtonTimeoutId.value = null
@@ -48,7 +61,7 @@ function scheduleHideBackButton() {
   }, 3000)
 }
 
-function handleUserInteraction() {
+function handleUserInteraction(): void {
   if (!showBackButton.value) {
     showBackButton.value = true
   }
@@ -56,8 +69,21 @@ function handleUserInteraction() {
   scheduleHideBackButton()
 }
 
+function handleTap(): void {
+  const now = Date.now()
+
+  if (lastTapTime.value !== null && now - lastTapTime.value < 350) {
+    lastTapTime.value = null
+    goBackToControl()
+    return
+  }
+
+  lastTapTime.value = now
+  handleUserInteraction()
+}
+
 // --- Szenen laden / Player-Logik ---
-async function loadScenes() {
+async function loadScenes(): Promise<void> {
   loading.value = true
   error.value = null
 
@@ -68,7 +94,8 @@ async function loadScenes() {
       throw new Error(`HTTP ${res.status}`)
     }
 
-    scenes.value = (await res.json()) as Scene[]
+    const json = (await res.json()) as Scene[]
+    scenes.value = json
   } catch (e: any) {
     console.error(e)
     error.value = e?.message ?? "Fehler beim Laden der Szenen."
@@ -77,17 +104,17 @@ async function loadScenes() {
   }
 }
 
-function clearTimer() {
+function clearTimer(): void {
   if (timerId.value !== null) {
-    clearTimeout(timerId.value)
+    window.clearTimeout(timerId.value)
     timerId.value = null
   }
 }
 
-function scheduleNextByTimer() {
+function scheduleNextByTimer(): void {
   clearTimer()
 
-  if (!state.value) {
+  if (state.value === null) {
     return
   }
 
@@ -108,11 +135,15 @@ function scheduleNextByTimer() {
   }, ms)
 }
 
-function handleStateUpdate(s: PlayerState) {
+function handleStateUpdate(s: PlayerState): void {
   const prev = state.value
   state.value = { ...s }
 
-  if (state.value?.currentSceneId == null && visibleScenes.value.length > 0) {
+  if (
+    (state.value.currentSceneId === null ||
+      state.value.currentSceneId === undefined) &&
+    visibleScenes.value.length > 0
+  ) {
     const first = visibleScenes.value[0]
 
     if (!first) {
@@ -157,11 +188,11 @@ onBeforeUnmount(() => {
   }
 })
 
-function handleRequestNext() {
+function handleRequestNext(): void {
   sendMessage({ type: "NEXT_SCENE" })
 }
 
-function goBackToControl() {
+function goBackToControl(): void {
   router.push("/")
 }
 </script>
@@ -169,50 +200,50 @@ function goBackToControl() {
 <template>
   <div
     class="relative w-screen h-screen bg-black flex items-center justify-center overflow-hidden"
-    @click="handleUserInteraction"
-    @touchstart.passive="handleUserInteraction"
+    @click="handleTap"
+    @touchstart.passive="handleTap"
   >
-    <!-- Icon-Only Back/Control Button (auto-hide) -->
+    <!-- Icon-Only Back/Control Button (auto-hide, unten rechts) -->
     <Transition name="back-btn-fade">
       <button
         v-if="showBackButton"
         type="button"
-        class="absolute top-4 left-4 z-50 w-10 h-10 rounded-full 
-               bg-white/85 border border-slate-200/80 
-               shadow-[0_12px_30px_rgba(15,23,42,0.55)] 
-               backdrop-blur-md flex items-center justify-center 
-               text-slate-800 active:scale-95 transition"
+        class="absolute bottom-4 right-4 z-50 w-11 h-11 rounded-full
+               bg-white/85 border border-slate-200/80
+               shadow-[0_16px_40px_rgba(15,23,42,0.65)]
+               backdrop-blur-md flex items-center justify-center
+               text-slate-900 active:scale-95 transition"
         @click.stop="goBackToControl"
         aria-label="Zurück zur Control View"
       >
-        <!-- kleines Fenster-Icon mit Pfeil nach links -->
+        <!-- Minimize / Exit-Fullscreen Icon -->
         <svg
           viewBox="0 0 24 24"
-          class="w-4 h-4"
+          class="w-4 h-4 inline-block -rotate-270"
           aria-hidden="true"
         >
-          <!-- Window -->
+          <!-- Rahmen / „Screen“ -->
           <rect
-            x="9"
-            y="6"
-            width="9"
-            height="12"
-            rx="2"
-            ry="2"
+            x="5"
+            y="5"
+            width="14"
+            height="14"
+            rx="2.5"
+            ry="2.5"
             fill="none"
             stroke="currentColor"
             stroke-width="1.6"
           />
-          <!-- Arrow Left -->
+          <!-- Pfeil nach unten (Minimize / Zurück) -->
           <path
-            d="M6 12h6"
+            d="M12 9v5.2"
             fill="none"
             stroke="currentColor"
             stroke-width="1.6"
             stroke-linecap="round"
           />
           <path
-            d="M8.5 9.5L6 12l2.5 2.5"
+            d="M9.75 12.8L12 15.05L14.25 12.8"
             fill="none"
             stroke="currentColor"
             stroke-width="1.6"
