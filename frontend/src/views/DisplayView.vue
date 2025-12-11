@@ -13,7 +13,6 @@ const scenes = ref<Scene[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const timerId = ref<number | null>(null)
 let unsubscribe: (() => void) | null = null
 
 const visibleScenes = computed(() => {
@@ -21,7 +20,6 @@ const visibleScenes = computed(() => {
     if (s.visible === undefined || s.visible === null) {
       return true
     }
-
     return s.visible
   })
 })
@@ -30,16 +28,10 @@ const currentScene = computed<Scene | null>(() => {
   if (state.value === null) {
     return null
   }
-
-  const found = visibleScenes.value.find((s) => {
-    return s.id === state.value!.currentSceneId
-  })
-
-  if (!found) {
-    return null
-  }
-
-  return found
+  const found = visibleScenes.value.find(
+    (s) => s.id === state.value!.currentSceneId,
+  )
+  return found ?? null
 })
 
 // --- Back-Button Sichtbarkeit + Timer ---
@@ -67,7 +59,6 @@ function handleUserInteraction(): void {
   if (!showBackButton.value) {
     showBackButton.value = true
   }
-
   scheduleHideBackButton()
 }
 
@@ -79,7 +70,7 @@ function handleTap(event: MouseEvent | TouchEvent): void {
     lastInputWasTouch.value = true
     lastTouchTime.value = now
   } else if (event.type === "click") {
-    // Wenn kurz zuvor ein Touch war -> synthetischen Click ignorieren
+    // synthetischen Click nach Touch ignorieren
     if (
       lastInputWasTouch.value &&
       lastTouchTime.value !== null &&
@@ -87,7 +78,6 @@ function handleTap(event: MouseEvent | TouchEvent): void {
     ) {
       return
     }
-
     lastInputWasTouch.value = false
   }
 
@@ -104,7 +94,7 @@ function handleTap(event: MouseEvent | TouchEvent): void {
   handleUserInteraction()
 }
 
-// --- Szenen laden / Player-Logik ---
+// --- Szenen laden ---
 async function loadScenes(): Promise<void> {
   loading.value = true
   error.value = null
@@ -126,66 +116,23 @@ async function loadScenes(): Promise<void> {
   }
 }
 
-function clearTimer(): void {
-  if (timerId.value !== null) {
-    window.clearTimeout(timerId.value)
-    timerId.value = null
-  }
-}
-
-function scheduleNextByTimer(): void {
-  clearTimer()
-
-  if (state.value === null) {
-    return
-  }
-
-  if (!state.value.isPlaying) {
-    return
-  }
-
-  const scene = currentScene.value
-  const ms = Math.min(10000, Math.max(0, state.value.transitionMs ?? 5000))
-
-  if (scene && scene.type === "video" && state.value.playVideosFullLength) {
-    return
-  }
-
-  timerId.value = window.setTimeout(() => {
-    sendMessage({ type: "NEXT_SCENE" })
-    scheduleNextByTimer()
-  }, ms)
-}
-
+// --- WS-STATE ---
 function handleStateUpdate(s: PlayerState): void {
-  const prev = state.value
   state.value = { ...s }
 
+  // Falls noch keine Szene gesetzt ist, aber sichtbare Szenen existieren → erste setzen
   if (
     (state.value.currentSceneId === null ||
       state.value.currentSceneId === undefined) &&
     visibleScenes.value.length > 0
   ) {
     const first = visibleScenes.value[0]
-
-    if (!first) {
-      return
+    if (first) {
+      sendMessage({ type: "SET_SCENE", payload: { sceneId: first.id } })
     }
-
-    sendMessage({ type: "SET_SCENE", payload: { sceneId: first.id } })
-    return
   }
 
-  const relevantChanged =
-    !prev ||
-    prev.currentSceneId !== s.currentSceneId ||
-    prev.transitionMs !== s.transitionMs ||
-    prev.isPlaying !== s.isPlaying ||
-    prev.playVideosFullLength !== s.playVideosFullLength
-
-  if (relevantChanged) {
-    scheduleNextByTimer()
-  }
+  // Kein eigener Timer mehr nötig – Rotation läuft im Backend.
 }
 
 onMounted(() => {
@@ -198,12 +145,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  clearTimer()
-
   if (unsubscribe) {
     unsubscribe()
   }
-
   if (hideBackButtonTimeoutId.value !== null) {
     window.clearTimeout(hideBackButtonTimeoutId.value)
     hideBackButtonTimeoutId.value = null
@@ -211,6 +155,7 @@ onBeforeUnmount(() => {
 })
 
 function handleRequestNext(): void {
+  // Nur für Videos mit playVideosFullLength (wird in SceneMedia gesteuert)
   sendMessage({ type: "NEXT_SCENE" })
 }
 
@@ -237,12 +182,7 @@ function goBackToControl(): void {
         @click.stop="goBackToControl"
         aria-label="Zurück zur Control View"
       >
-        <!-- Icon bleibt wie von uns definiert -->
-        <svg
-          viewBox="0 0 24 24"
-          class="w-4 h-4 rotate-90"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 24 24" class="w-4 h-4 rotate-90" aria-hidden="true">
           <rect
             x="5"
             y="5"

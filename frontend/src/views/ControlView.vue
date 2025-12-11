@@ -101,15 +101,13 @@ const visibleScenes = computed(() =>
 )
 const visibleCount = computed(() => visibleScenes.value.length)
 
-// --- TIMER für Auto-Wechsel ---
-const timerId = ref<number | null>(null)
-
+// --- Double-Tap für Display View ---
 const lastPreviewTapTime = ref<number | null>(null)
 const lastPreviewTouchTime = ref<number | null>(null)
 const lastPreviewInputWasTouch = ref(false)
 
 function goToDisplayView(): void {
-  router.push("/display") // oder mit Route-Name
+  router.push("/display")
 }
 
 function handlePreviewTap(event: MouseEvent | TouchEvent): void {
@@ -126,7 +124,6 @@ function handlePreviewTap(event: MouseEvent | TouchEvent): void {
     ) {
       return
     }
-
     lastPreviewInputWasTouch.value = false
   }
 
@@ -140,69 +137,6 @@ function handlePreviewTap(event: MouseEvent | TouchEvent): void {
   }
 
   lastPreviewTapTime.value = now
-}
-
-function clearTimer() {
-  if (timerId.value !== null) {
-    clearTimeout(timerId.value)
-    timerId.value = null
-  }
-}
-
-// Hilfsfunktion: nächste Szene nach Modus (sequentiell / random) bestimmen
-function computeNextScene(): Scene | null {
-  const s = state.value
-  const list = visibleScenes.value
-  if (!s || list.length === 0) {
-    return null
-  }
-
-  const mode = s.mode
-  const currentId = s.currentSceneId
-  const currentIndex = list.findIndex((sc) => sc.id === currentId)
-
-  if (mode === "random") {
-    if (list.length === 1) {
-      return list[0] ?? null
-    }
-    let idx = currentIndex
-    while (idx === currentIndex || idx === -1) {
-      idx = Math.floor(Math.random() * list.length)
-    }
-    return list[idx] ?? null
-  }
-
-  if (currentIndex === -1) {
-    return list[0] ?? null
-  }
-  const nextIndex = (currentIndex + 1) % list.length
-  return list[nextIndex] ?? null
-}
-
-function scheduleNextByTimer() {
-  clearTimer()
-
-  const s = state.value
-  const scene = currentScene.value
-
-  if (!s || !scene) {
-    return
-  }
-
-  if (!s.isPlaying) {
-    return
-  }
-
-  if (scene.type === "video" && s.playVideosFullLength) {
-    return
-  }
-
-  const baseMs = s.transitionMs ?? localDurationMs.value ?? 5000
-  const ms = Math.min(10000, Math.max(500, baseMs))
-
-  timerId.value = window.setTimeout(() => {
-    nextScene()
-  }, ms)
 }
 
 // ===============================
@@ -219,10 +153,8 @@ const totalThumbPages = computed(() => {
   return Math.ceil(total / thumbPageSize)
 })
 
-// Container-Ref
 const thumbOuter = ref<HTMLElement | null>(null)
 
-// Seiten als Array von Scene-Arrays
 const pages = computed(() => {
   const res: Scene[][] = []
   const total = scenes.value.length
@@ -259,6 +191,14 @@ function onThumbScroll() {
   currentThumbPage.value = clamped
 }
 
+const resolveUrl = (raw?: string) => {
+  if (!raw) {
+    return ""
+  }
+
+  return raw.startsWith("http") ? raw : `${API_BASE}${raw}`
+}
+
 // ===============================
 // Rest: Player, Upload, etc.
 // ===============================
@@ -272,6 +212,7 @@ const playVideosFullLength = computed<boolean>({
   },
 })
 
+// State vom Server → nur lokale Controls syncen
 watch(
   () => state.value,
   (s, prev) => {
@@ -288,7 +229,6 @@ watch(
       localMode.value = s.mode
       localDurationMs.value = nextTransition
       initLoaded.value = true
-      scheduleNextByTimer()
       return
     }
 
@@ -298,17 +238,6 @@ watch(
 
     if (s.mode !== prev?.mode) {
       localMode.value = s.mode
-    }
-
-    const relevantChanged =
-      !prev ||
-      prev.currentSceneId !== s.currentSceneId ||
-      prev.transitionMs !== s.transitionMs ||
-      prev.isPlaying !== s.isPlaying ||
-      prev.playVideosFullLength !== s.playVideosFullLength
-
-    if (relevantChanged) {
-      scheduleNextByTimer()
     }
   },
 )
@@ -322,7 +251,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  clearTimer()
   if (unsubscribe) {
     unsubscribe()
   }
@@ -359,14 +287,8 @@ function nextScene() {
   if (!state.value) {
     return
   }
-  const next = computeNextScene()
-  if (!next) {
-    return
-  }
-  sendMessage({
-    type: "SET_SCENE",
-    payload: { sceneId: next.id },
-  })
+  // Rotation-Logik liegt zentral im Backend
+  sendMessage({ type: "NEXT_SCENE" })
 }
 
 function prevScene() {
@@ -670,8 +592,7 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="prevScene"
               aria-label="Vorherige Szene"
-              class="pill-tap w-11 h-11 rounded-full border border-white/70 bg-white/65 text-slate-900/80 
-                     shadow-[0_8px_22px_rgba(15,23,42,0.22)] flex items-center justify-center
+              class="pill-tap w-11 h-11 rounded-full bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] flex items-center justify-center
                      transition-transform duration-150 active:scale-95"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
@@ -687,8 +608,8 @@ async function deleteSelectedScenes() {
               :class="[
                 'pill-tap w-12 h-12 rounded-full border flex items-center justify-center transition-transform duration-150 active:scale-95',
                 state?.isPlaying
-                  ? 'bg-sky-500 text-white border-sky-400 shadow-[0_0_26px_rgba(56,189,248,0.75)]'
-                  : 'bg-white/80 text-slate-900/90 border-white/70 shadow-[0_10px_26px_rgba(15,23,42,0.24)]'
+                  ? 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] hover:bg-white/90'
+                  : 'bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_10px_26px_rgba(15,23,42,0.24)]'
               ]"
             >
               <template v-if="state?.isPlaying">
@@ -722,8 +643,7 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="nextScene"
               aria-label="Nächste Szene"
-              class="pill-tap w-11 h-11 rounded-full border border-white/70 bg-white/65 text-slate-900/80  
-                     shadow-[0_8px_22px_rgba(15,23,42,0.22)] flex items-center justify-center
+              class="pill-tap w-11 h-11 rounded-full  bg-white/70 border border-slate-200/80 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.28)] flex items-center justify-center
                      transition-transform duration-150 active:scale-95"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
@@ -883,17 +803,9 @@ async function deleteSelectedScenes() {
                       <div class="rounded-[18px] overflow-hidden bg-white/5">
                         <div class="w-full aspect-square">
                           <template v-if="scene.thumbnailUrl">
+                            <!-- Immer Thumbnail, egal ob Bild oder Video -->
                             <img
-                              :src="API_BASE + scene.thumbnailUrl"
-                              loading="lazy"
-                              decoding="async"
-                              class="w-full h-full object-cover"
-                            />
-                          </template>
-
-                          <template v-else-if="scene.type === 'image'">
-                            <img
-                              :src="API_BASE + scene.url"
+                              :src="resolveUrl(scene.thumbnailUrl)"
                               loading="lazy"
                               decoding="async"
                               class="w-full h-full object-cover"
@@ -901,14 +813,13 @@ async function deleteSelectedScenes() {
                           </template>
 
                           <template v-else>
-                            <video
-                              :src="API_BASE + scene.url"
-                              :poster="scene.thumbnailUrl ? API_BASE + scene.thumbnailUrl : undefined"
+                            <!-- Fallback: Originalbild, falls aus irgendeinem Grund kein Thumbnail existiert -->
+                            <img
+                              :src="resolveUrl(scene.url)"
+                              loading="lazy"
+                              decoding="async"
                               class="w-full h-full object-cover"
-                              muted
-                              playsinline
-                              preload="metadata"
-                            ></video>
+                            />
                           </template>
                         </div>
                       </div>

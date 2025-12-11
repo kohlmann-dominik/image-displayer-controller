@@ -2,7 +2,7 @@
 import fs from "fs"
 import path from "path"
 import { generateThumbnail } from "./thumbnails"
-
+import { ensureOptimizedVideo, ensureOptimizedImage } from "./optimizedMedia"
 
 export interface Scene {
   id: number
@@ -12,6 +12,7 @@ export interface Scene {
   type: "image" | "video"
   visible?: boolean
   thumbnailUrl?: string
+  optimizedUrl?: string
 }
 
 // Pfade
@@ -37,8 +38,9 @@ function loadScenesFromFile(): Scene[] {
     if (!fs.existsSync(dataFile)) {
       return []
     }
-    const raw = fs.readFileSync(dataFile, "utf8")
-    const parsed = JSON.parse(raw) as any[]
+
+    const rawFile = fs.readFileSync(dataFile, "utf8")
+    const parsed = JSON.parse(rawFile) as any[]
 
     if (!Array.isArray(parsed)) {
       return []
@@ -80,6 +82,11 @@ function loadScenesFromFile(): Scene[] {
             ? (raw as any).thumbnailUrl
             : undefined
 
+        const optimizedUrl =
+          typeof (raw as any).optimizedUrl === "string"
+            ? (raw as any).optimizedUrl
+            : undefined
+
         const scene: Scene = {
           id,
           filename,
@@ -88,6 +95,7 @@ function loadScenesFromFile(): Scene[] {
           type,
           visible,
           thumbnailUrl,
+          optimizedUrl,
         }
 
         return scene
@@ -138,12 +146,21 @@ async function internalSyncScenesWithFilesystem(): Promise<void> {
   const filesOnDisk = fs
     .readdirSync(imagesDir)
     .filter((f) => {
-      if (f.startsWith(".")) return false
+      if (f.startsWith(".")) {
+        return false
+      }
+
       const full = path.join(imagesDir, f)
-      try { return fs.statSync(full).isFile() } catch { return false }
+      try {
+        return fs.statSync(full).isFile()
+      } catch {
+        return false
+      }
     })
 
   const fileSet = new Set(filesOnDisk)
+
+  // Szenen entfernen, deren Datei es nicht mehr gibt
   scenes = scenes.filter((s) => fileSet.has(s.filename))
 
   const knownFilenames = new Set(scenes.map((s) => s.filename))
@@ -151,21 +168,41 @@ async function internalSyncScenesWithFilesystem(): Promise<void> {
 
   for (const file of filesOnDisk) {
     if (knownFilenames.has(file)) {
-      // Bestehendes thumbnail fixen, falls fehlt
-      const scene = scenes.find((s) => s.filename === file)!
-      if (!scene.thumbnailUrl) {
-        const fp = path.join(imagesDir, file)
-        scene.thumbnailUrl =
-          (await generateThumbnail(fp, scene.type === "video")) ?? undefined
+        const scene = scenes.find((s) => s.filename === file)!
+        const fullPath = path.join(imagesDir, file)
+
+        if (!scene.thumbnailUrl) {
+          scene.thumbnailUrl =
+            (await generateThumbnail(fullPath, scene.type === "video")) ??
+            undefined
+        }
+
+        // Optimierte Version nachziehen, falls nötig
+        if (scene.type === "video" && !scene.optimizedUrl) {
+          scene.optimizedUrl =
+            (await ensureOptimizedVideo(fullPath)) ?? undefined
+        }
+
+        if (scene.type === "image" && !scene.optimizedUrl) {
+          scene.optimizedUrl =
+            (await ensureOptimizedImage(fullPath)) ?? undefined
+        }
+
+        continue
       }
-      continue
-    }
 
     // Neue Szene
     const fullPath = path.join(imagesDir, file)
     const type = detectTypeFromFilename(file)
 
     const thumb = await generateThumbnail(fullPath, type === "video")
+
+    let optimizedUrl: string | null = null
+    if (type === "video") {
+      optimizedUrl = await ensureOptimizedVideo(fullPath)
+    } else {
+      optimizedUrl = await ensureOptimizedImage(fullPath)
+    }
 
     const scene: Scene = {
       id: nextId++,
@@ -175,6 +212,7 @@ async function internalSyncScenesWithFilesystem(): Promise<void> {
       type,
       visible: true,
       thumbnailUrl: thumb ?? undefined,
+      optimizedUrl: optimizedUrl ?? undefined,
     }
 
     scenes.push(scene)
@@ -188,12 +226,12 @@ async function internalSyncScenesWithFilesystem(): Promise<void> {
  * nochmal mit dem Dateisystem abgleichen willst.
  */
 export async function syncScenesWithFilesystem(): Promise<void> {
-  internalSyncScenesWithFilesystem()
+  await internalSyncScenesWithFilesystem()
 }
 
 // Beim Start direkt einmal synchronisieren
 internalSyncScenesWithFilesystem().then(() => {
-  console.log("[scenes] Sync complete (with thumbnails).")
+  console.log("[scenes] Sync complete (with thumbnails + optimized videos).")
 })
 
 // --- API-Funktionen für server.ts ---
@@ -222,8 +260,14 @@ export async function addSceneFromFilename(filename: string): Promise<Scene> {
   const type = detectTypeFromFilename(filename)
   const fullPath = path.join(imagesDir, filename)
 
-  // Thumbnail erzeugen
   const thumbnailUrl = await generateThumbnail(fullPath, type === "video")
+
+  let optimizedUrl: string | null = null
+  if (type === "video") {
+    optimizedUrl = await ensureOptimizedVideo(fullPath)
+  } else {
+    optimizedUrl = await ensureOptimizedImage(fullPath)
+  }
 
   const scene: Scene = {
     id: getNextId(),
@@ -233,7 +277,9 @@ export async function addSceneFromFilename(filename: string): Promise<Scene> {
     type,
     visible: true,
     thumbnailUrl: thumbnailUrl ?? undefined,
+    optimizedUrl: optimizedUrl ?? undefined,
   }
+
 
   scenes.push(scene)
   saveScenesToFile(scenes)
@@ -246,6 +292,7 @@ export function removeScene(id: number): Scene | null {
   if (idx === -1) {
     return null
   }
+
   const [removed] = scenes.splice(idx, 1)
   saveScenesToFile(scenes)
   return removed

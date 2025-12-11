@@ -56,7 +56,7 @@ body::before {
 .control-bg {
   position: relative;
   min-height: 100dvh;
-  background-image: url("./extended.png");
+  background-image: url("./backgroundFinal.png");
   background-size: cover;          /* füllt den Screen */
   background-position: center top; /* Motiv oben halten */
   background-repeat: no-repeat;

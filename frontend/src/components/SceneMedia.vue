@@ -29,18 +29,41 @@ const mediaClass = computed(() => {
     return "modal-media-frame max-h-[80vh] max-w-full h-auto w-auto object-contain"
   }
 
+  // display
   return "w-full h-full object-contain"
 })
 
 /* ───────────────────────────────
-   Helpers
+   Helpers: URL-Resolver
 ──────────────────────────────── */
 const isVideo = computed(() => props.scene?.type === "video")
 
-const srcUrl = computed(() => {
-  if (!props.scene?.url) return ""
-  const url = props.scene.url
-  return url.startsWith("http") ? url : `${API_BASE}${url}`
+const imageSrcUrl = computed(() => {
+  if (!props.scene) {
+    return ""
+  }
+
+  // Für Bilder: bevorzugt optimierte Version (JPG), sonst Original
+  const raw = props.scene.optimizedUrl || props.scene.url
+  if (!raw) {
+    return ""
+  }
+
+  return raw.startsWith("http") ? raw : `${API_BASE}${raw}`
+})
+
+const videoSrcUrl = computed(() => {
+  if (!props.scene) {
+    return ""
+  }
+
+  // Für Videos: bevorzugt optimierte MP4-Version
+  const raw = props.scene.optimizedUrl || props.scene.url
+  if (!raw) {
+    return ""
+  }
+
+  return raw.startsWith("http") ? raw : `${API_BASE}${raw}`
 })
 
 /* ───────────────────────────────
@@ -81,11 +104,11 @@ function pickNextTransition() {
 }
 
 const transitionName = computed(() =>
-  props.mode === "display" ? currentTransition.value : "scene-fade"
+  props.mode === "display" ? currentTransition.value : "scene-fade",
 )
 
 const sceneKey = computed(
-  () => `${props.scene?.id ?? "empty"}-${transitionName.value}`
+  () => `${props.scene?.id ?? "empty"}-${transitionName.value}`,
 )
 
 /* ───────────────────────────────
@@ -93,63 +116,56 @@ const sceneKey = computed(
 ──────────────────────────────── */
 function setupVideo() {
   const el = videoRef.value
-  if (!el) return
+  if (!el) {
+    return
+  }
 
   el.currentTime = 0
-  el.play().catch(() => {})
+  el.play().catch(() => {
+    // Autoplay kann auf manchen Geräten geblockt werden – dann einfach still ignorieren
+  })
 }
 
 watch(
   () => props.scene?.id,
   () => {
     pickNextTransition()
-    if (isVideo.value) nextTick(() => setupVideo())
-  }
+    if (isVideo.value) {
+      nextTick(() => {
+        setupVideo()
+      })
+    }
+  },
 )
 
 onMounted(() => {
   pickNextTransition()
-  if (isVideo.value) setupVideo()
+  if (isVideo.value) {
+    setupVideo()
+  }
 })
 
 onBeforeUnmount(() => {
-  videoRef.value?.pause()
+  if (videoRef.value) {
+    videoRef.value.pause()
+  }
 })
 
 /* ───────────────────────────────
-   FULLSCREEN (Video Only)
-──────────────────────────────── */
-function enterFullscreen() {
-  const el = videoRef.value
-  if (!el) return
-
-  if (el.requestFullscreen) el.requestFullscreen()
-  else if ((el as any).webkitEnterFullscreen) (el as any).webkitEnterFullscreen()
-}
-
-/* ───────────────────────────────
    ENDED → Slideshow Next
+   - Im Modal: nix tun (loop)
+   - In Display/Preview: bei "volle Länge" → nächste Szene
 ──────────────────────────────── */
 function handleEnded() {
-  if (props.playVideosFullLength) emit("requestNext")
-}
-
-/* ───────────────────────────────
-   MODAL VIDEO HANDLING
-   → Videos sollen NICHT im Modal bleiben!
-   → Direkt Fullscreen öffnen
-──────────────────────────────── */
-watch(
-  () => props.mode,
-  (mode) => {
-    if (mode === "modal-preview" && isVideo.value) {
-      nextTick(() => {
-        enterFullscreen()
-        emit("requestModalClose")
-      })
-    }
+  // Im Modal läuft das Video per loop-Attribut endlos, kein Next
+  if (props.mode === "modal-preview") {
+    return
   }
-)
+
+  if (props.playVideosFullLength) {
+    emit("requestNext")
+  }
+}
 </script>
 
 <template>
@@ -166,27 +182,31 @@ watch(
         <!-- IMAGE -->
         <img
           v-if="scene?.type === 'image'"
-          :src="srcUrl"
+          :src="imageSrcUrl"
           :class="mediaClass"
+          loading="lazy"
+          decoding="async"
         />
 
         <!-- VIDEO -->
         <video
           v-else-if="scene?.type === 'video'"
           ref="videoRef"
-          :src="srcUrl"
+          :src="videoSrcUrl"
           :class="mediaClass"
           muted
           playsinline
-          preload="auto"
+          preload="metadata"
           autoplay
           @ended="handleEnded"
         />
 
         <!-- NONE -->
-        <div v-else class="text-white/60 text-sm">Keine Szene ausgewählt</div>
+        <div v-else class="text-white/60 text-sm">
+          Keine Szene ausgewählt
+        </div>
 
-        <!-- FULLSCREEN BUTTON -->
+        <!-- FULLSCREEN BUTTON (zur Display View) -->
         <button
           type="button"
           class="absolute bottom-2 right-3 w-8 h-8 rounded-full bg-white/80 border border-slate-200/80 flex items-center justify-center text-[13px] text-slate-700 shadow-sm hover:bg-white/95 active:scale-95 transition pill-tap"
@@ -205,28 +225,33 @@ watch(
           :key="sceneKey"
           class="relative w-full h-full flex items-center justify-center"
         >
-          <!-- IMAGE in Modal -->
+          <!-- IMAGE in Modal/Display -->
           <img
             v-if="scene.type === 'image'"
-            :src="srcUrl"
+            :src="imageSrcUrl"
             :class="mediaClass"
+            loading="lazy"
+            decoding="async"
           />
 
-          <!-- VIDEO (Modal → auto fullscreen, keine Darstellung nötig) -->
+          <!-- VIDEO in Modal/Display -->
           <video
             v-else
             ref="videoRef"
-            :src="srcUrl"
+            :src="videoSrcUrl"
             :class="mediaClass"
             muted
             playsinline
-            preload="auto"
+            preload="metadata"
             autoplay
+            :loop="mode === 'modal-preview'"
             @ended="handleEnded"
           />
         </div>
 
-        <div v-else class="text-white/60 text-sm">Keine Szene ausgewählt</div>
+        <div v-else class="text-white/60 text-sm">
+          Keine Szene ausgewählt
+        </div>
       </Transition>
     </template>
   </div>
