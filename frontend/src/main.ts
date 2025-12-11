@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.33" // neue Version setzen
+const APP_VERSION = "0.4.34" // neue Version setzen
 
 const url = new URL(window.location.href)
 
@@ -14,6 +14,40 @@ if (url.searchParams.get("v") !== APP_VERSION) {
   // danach nicht weiter initialisieren
 } else {
   const app = createApp(App)
+
+  // 🔹 Dynamische theme-color + body background je nach Route
+  router.afterEach((to) => {
+    const themeMeta = document.querySelector(
+      'meta[name="theme-color"]'
+    ) as HTMLMetaElement | null
+
+    const isDisplayRoute = to.name === "display" // ggf. anpassen!
+
+    // Navbar / Browser-Leiste einfärben
+    if (themeMeta) {
+      if (isDisplayRoute) {
+        // Display → schwarz
+        themeMeta.setAttribute("content", "#000000")
+        console.log("BG COLOR SET TO BLACK")
+      } else {
+        // Rest → dein Blau
+        themeMeta.setAttribute("content", "#38bdf8")
+        console.log("BG COLOR SET TO BLUE")
+      }
+    }
+
+    // 🔸 Body-Background je nach Route setzen
+    const body = document.body
+
+    if (isDisplayRoute) {
+      body.style.backgroundColor = "#000000"
+      body.style.color = "#ffffff" // optional, falls nötig
+    } else {
+      // Hier deine Standard-Hintergrundfarbe aus dem CSS
+      body.style.backgroundColor = "#0ea5e9"
+      body.style.color = "" // zurücksetzen
+    }
+  })
 
   app.use(router)
   app.mount("#app")
