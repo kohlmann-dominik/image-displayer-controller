@@ -520,7 +520,7 @@ async function deleteSelectedScenes() {
           class="pill-tap py-2 rounded-xl text-sm font-semibold"
           :class="
             activeTab === 'preview'
-              ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
+              ? 'bg-white/80 border-slate-200/70 backdrop-blur-md text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
               : 'text-slate-600'
           "
           @click="setTab('preview')"
@@ -532,7 +532,7 @@ async function deleteSelectedScenes() {
           class="pill-tap py-2 rounded-xl text-sm font-semibold"
           :class="
             activeTab === 'scenes'
-              ? 'bg-white text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
+              ? 'bg-white/80 border-slate-200/70 backdrop-blur-md text-slate-800 shadow-[0_8px_26px_rgba(15,23,42,0.18)]'
               : 'text-slate-600'
           "
           @click="setTab('scenes')"
@@ -942,7 +942,7 @@ async function deleteSelectedScenes() {
           <button
             @click="openFileDialog"
             :disabled="uploading"
-            class="flex-1 h-12 glass-pill-btn glass-pill-primary cta-pill text-sm font-semibold flex items-center justify-center"
+            class="flex-1 h-12 glass-pill-primary cta-pill text-sm font-semibold flex items-center justify-center"
           >
             {{ uploading ? "Upload…" : "Upload" }}
           </button>
@@ -950,7 +950,7 @@ async function deleteSelectedScenes() {
           <button
             @click="deleteSelectedScenes"
             :disabled="selectedCount === 0"
-            class="flex-1 h-12 glass-pill-btn glass-pill-danger cta-pill text-sm font-semibold flex items-center justify-center"
+            class="flex-1 h-12 glass-pill-danger cta-pill text-sm font-semibold flex items-center justify-center"
           >
             Löschen ({{ selectedCount }})
           </button>
