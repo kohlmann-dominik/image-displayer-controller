@@ -670,10 +670,11 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="prevScene"
               aria-label="Vorherige Szene"
-              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100 
-                     shadow-[0_0_22px_6px_rgba(255,255,255,0.35)]  flex items-center justify-center"
+              class="pill-tap w-11 h-11 rounded-full border border-white/70 bg-white/65 text-slate-900/80 
+                     shadow-[0_8px_22px_rgba(15,23,42,0.22)] flex items-center justify-center
+                     transition-transform duration-150 active:scale-95"
             >
-              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                 <rect x="5" y="5" width="2" height="14" rx="0.5" fill="currentColor" />
                 <path d="M17 5L9 12l8 7z" fill="currentColor" />
               </svg>
@@ -684,19 +685,20 @@ async function deleteSelectedScenes() {
               @click.stop="togglePlay"
               aria-label="Play/Pause"
               :class="[
-                'control-icon-btn control-icon-btn--primary w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100 flex items-center justify-center',
-                !state?.isPlaying ? 'control-icon-btn--pulse' : ''
+                'pill-tap w-12 h-12 rounded-full border flex items-center justify-center transition-transform duration-150 active:scale-95',
+                state?.isPlaying
+                  ? 'bg-sky-500 text-white border-sky-400 shadow-[0_0_26px_rgba(56,189,248,0.75)]'
+                  : 'bg-white/80 text-slate-900/90 border-white/70 shadow-[0_10px_26px_rgba(15,23,42,0.24)]'
               ]"
             >
               <template v-if="state?.isPlaying">
-                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                   <rect
                     x="6"
                     y="5"
                     width="4"
                     height="14"
                     rx="1"
-                    stroke="currentColor"
                     fill="currentColor"
                   />
                   <rect
@@ -705,13 +707,12 @@ async function deleteSelectedScenes() {
                     width="4"
                     height="14"
                     rx="1"
-                    stroke="currentColor"
                     fill="currentColor"
                   />
                 </svg>
               </template>
               <template v-else>
-                <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                   <path d="M8 5l11 7-11 7z" fill="currentColor" />
                 </svg>
               </template>
@@ -721,10 +722,11 @@ async function deleteSelectedScenes() {
             <button
               @click.stop="nextScene"
               aria-label="Nächste Szene"
-              class="control-icon-btn w-11 h-11 rounded-full border border-white/80 bg-white/40 text-zinc-100  
-                     shadow-[0_0_22px_6px_rgba(255,255,255,0.35)] flex items-center justify-center"
+              class="pill-tap w-11 h-11 rounded-full border border-white/70 bg-white/65 text-slate-900/80  
+                     shadow-[0_8px_22px_rgba(15,23,42,0.22)] flex items-center justify-center
+                     transition-transform duration-150 active:scale-95"
             >
-              <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
                 <path d="M17 5h-2v14h2zM13 12L5 5v14z" fill="currentColor" />
               </svg>
             </button>
