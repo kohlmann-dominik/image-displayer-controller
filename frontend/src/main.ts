@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.37" // neue Version setzen
+const APP_VERSION = "0.4.38" // neue Version setzen
 
 const url = new URL(window.location.href)
 
@@ -28,11 +28,9 @@ if (url.searchParams.get("v") !== APP_VERSION) {
       if (isDisplayRoute) {
         // Display → schwarz
         themeMeta.setAttribute("content", "#000000")
-        console.log("BG COLOR SET TO BLACK")
       } else {
         // Rest → dein Blau
         themeMeta.setAttribute("content", "#287ffd")
-        console.log("BG COLOR SET TO BLUE")
       }
     }
 

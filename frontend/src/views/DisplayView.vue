@@ -221,11 +221,10 @@ function goBackToControl(): void {
 
 <template>
   <div
-    class="relative w-screen h-screen bg-black flex items-center justify-center overflow-hidden"
+    class="fixed inset-0 bg-black flex items-center justify-center overflow-hidden"
     @click="handleTap"
     @touchstart.passive="handleTap"
   >
-    <!-- Icon-Only Back/Control Button (auto-hide, unten rechts) -->
     <Transition name="back-btn-fade">
       <button
         v-if="showBackButton"
@@ -238,13 +237,12 @@ function goBackToControl(): void {
         @click.stop="goBackToControl"
         aria-label="Zurück zur Control View"
       >
-        <!-- Minimize / Exit-Fullscreen Icon -->
+        <!-- Icon bleibt wie von uns definiert -->
         <svg
           viewBox="0 0 24 24"
-          class="w-4 h-4 rotate-90"
+          class="w-4 h-4"
           aria-hidden="true"
         >
-          <!-- Rahmen / „Screen“ -->
           <rect
             x="5"
             y="5"
@@ -256,7 +254,6 @@ function goBackToControl(): void {
             stroke="currentColor"
             stroke-width="1.6"
           />
-          <!-- Pfeil nach unten (Minimize / Zurück) -->
           <path
             d="M12 9v5.2"
             fill="none"
@@ -276,7 +273,7 @@ function goBackToControl(): void {
       </button>
     </Transition>
 
-    <div class="w-full h-full flex items-center justify-center py-4 md:py-6">
+    <div class="w-full h-full flex items-center justify-center">
       <SceneMedia
         :scene="currentScene"
         mode="display"
