@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.34" // neue Version setzen
+const APP_VERSION = "0.4.35" // neue Version setzen
 
 const url = new URL(window.location.href)
 
@@ -31,7 +31,7 @@ if (url.searchParams.get("v") !== APP_VERSION) {
         console.log("BG COLOR SET TO BLACK")
       } else {
         // Rest → dein Blau
-        themeMeta.setAttribute("content", "#38bdf8")
+        themeMeta.setAttribute("content", "#287ffd")
         console.log("BG COLOR SET TO BLUE")
       }
     }
@@ -44,7 +44,7 @@ if (url.searchParams.get("v") !== APP_VERSION) {
       body.style.color = "#ffffff" // optional, falls nötig
     } else {
       // Hier deine Standard-Hintergrundfarbe aus dem CSS
-      body.style.backgroundColor = "#0ea5e9"
+      body.style.backgroundColor = "#287ffd"
       body.style.color = "" // zurücksetzen
     }
   })
