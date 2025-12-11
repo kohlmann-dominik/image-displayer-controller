@@ -1,0 +1,30 @@
+<svg width="256" height="256" viewBox="0 0 256 256"
+     xmlns="http://www.w3.org/2000/svg" fill="none">
+
+  <!-- äußere, abgerundete Kachel -->
+  <rect x="16" y="16" width="224" height="224" rx="56"
+        fill="white"/>
+
+  <!-- innerer Screen-Rahmen -->
+  <rect x="56" y="62" width="144" height="114" rx="22"
+        stroke="#007AFF" stroke-width="12" fill="none"/>
+
+  <!-- Sonne oben rechts im Screen -->
+  <circle cx="165" cy="95" r="13"
+          stroke="#007AFF" stroke-width="10" fill="none"/>
+
+  <!-- Berglinie: zwei Berge, zweiter Peak unter der Sonne -->
+  <polyline
+    points="80,152 110,116 133,138 150,120, 180,152"
+    fill="none"
+    stroke="#007AFF"
+    stroke-width="12"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Unterer Strich / Standfuß -->
+  <line x1="112" y1="200" x2="152" y2="200"
+        stroke="#007AFF" stroke-width="12"
+        stroke-linecap="round"/>
+</svg>

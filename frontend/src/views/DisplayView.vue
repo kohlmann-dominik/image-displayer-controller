@@ -240,7 +240,7 @@ function goBackToControl(): void {
         <!-- Icon bleibt wie von uns definiert -->
         <svg
           viewBox="0 0 24 24"
-          class="w-4 h-4"
+          class="w-4 h-4 rotate-90"
           aria-hidden="true"
         >
           <rect
