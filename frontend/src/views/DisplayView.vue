@@ -48,6 +48,8 @@ const hideBackButtonTimeoutId = ref<number | null>(null)
 
 // Double-Tap / Double-Click
 const lastTapTime = ref<number | null>(null)
+const lastTouchTime = ref<number | null>(null)
+const lastInputWasTouch = ref(false)
 
 function scheduleHideBackButton(): void {
   if (hideBackButtonTimeoutId.value !== null) {
@@ -69,9 +71,27 @@ function handleUserInteraction(): void {
   scheduleHideBackButton()
 }
 
-function handleTap(): void {
+function handleTap(event: MouseEvent | TouchEvent): void {
   const now = Date.now()
 
+  // 1) Quelle erkennen: Touch oder Click?
+  if (event.type === "touchstart") {
+    lastInputWasTouch.value = true
+    lastTouchTime.value = now
+  } else if (event.type === "click") {
+    // Wenn kurz zuvor ein Touch war -> synthetischen Click ignorieren
+    if (
+      lastInputWasTouch.value &&
+      lastTouchTime.value !== null &&
+      now - lastTouchTime.value < 500
+    ) {
+      return
+    }
+
+    lastInputWasTouch.value = false
+  }
+
+  // 2) Double-Tap erkennen
   if (lastTapTime.value !== null && now - lastTapTime.value < 350) {
     lastTapTime.value = null
     goBackToControl()
@@ -79,6 +99,8 @@ function handleTap(): void {
   }
 
   lastTapTime.value = now
+
+  // 3) Normaler Tap → Back-Button zeigen / Timer resetten
   handleUserInteraction()
 }
 
@@ -219,7 +241,7 @@ function goBackToControl(): void {
         <!-- Minimize / Exit-Fullscreen Icon -->
         <svg
           viewBox="0 0 24 24"
-          class="w-4 h-4 inline-block -rotate-270"
+          class="w-4 h-4 rotate-90"
           aria-hidden="true"
         >
           <!-- Rahmen / „Screen“ -->

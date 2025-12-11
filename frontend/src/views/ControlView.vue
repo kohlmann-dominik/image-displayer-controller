@@ -104,27 +104,42 @@ const visibleCount = computed(() => visibleScenes.value.length)
 // --- TIMER für Auto-Wechsel ---
 const timerId = ref<number | null>(null)
 
+const lastPreviewTapTime = ref<number | null>(null)
+const lastPreviewTouchTime = ref<number | null>(null)
+const lastPreviewInputWasTouch = ref(false)
+
 function goToDisplayView(): void {
-  router.push("/display")
+  router.push("/display") // oder mit Route-Name
 }
 
-const lastPreviewTapTime = ref<number | null>(null)
-
-function handlePreviewTap(): void {
+function handlePreviewTap(event: MouseEvent | TouchEvent): void {
   const now = Date.now()
 
-  // 2. Tap innerhalb von 350 ms → als Double-Tap werten
-  if (lastPreviewTapTime.value !== null && now - lastPreviewTapTime.value < 350) {
+  if (event.type === "touchstart") {
+    lastPreviewInputWasTouch.value = true
+    lastPreviewTouchTime.value = now
+  } else if (event.type === "click") {
+    if (
+      lastPreviewInputWasTouch.value &&
+      lastPreviewTouchTime.value !== null &&
+      now - lastPreviewTouchTime.value < 500
+    ) {
+      return
+    }
+
+    lastPreviewInputWasTouch.value = false
+  }
+
+  if (
+    lastPreviewTapTime.value !== null &&
+    now - lastPreviewTapTime.value < 350
+  ) {
     lastPreviewTapTime.value = null
     goToDisplayView()
     return
   }
 
-  // erster Tap → Zeit merken
   lastPreviewTapTime.value = now
-
-  // Optional: hier kannst du noch andere Sachen machen,
-  // z. B. Controls einblenden etc.
 }
 
 function clearTimer() {
@@ -633,7 +648,10 @@ async function deleteSelectedScenes() {
           <div
             class="glass-panel-soft-preview backdrop-blur-xs w-full h-[340px] sm:h-[370px] rounded-[40px] overflow-hidden flex items-center justify-center"
           >
-            <div class="relative w-full h-full flex items-center justify-center">
+            <div class="relative w-full h-full flex items-center justify-center"
+              @click="handlePreviewTap"
+              @touchstart.passive="handlePreviewTap"
+            >
               <SceneMedia
                 v-if="currentScene"
                 :scene="currentScene"
@@ -642,8 +660,6 @@ async function deleteSelectedScenes() {
                 @requestNext="nextScene"
                 @requestFullscreenDisplay="goToDisplayView"
                 class="absolute inset-0 flex items-center justify-center"
-                @click="handlePreviewTap"
-                @touchstart.passive="handlePreviewTap"
               />
             </div>
           </div>
