@@ -7,6 +7,7 @@ const props = defineProps<{
   scene: Scene | null
   mode: "control-preview" | "modal-preview" | "display"
   playVideosFullLength: boolean
+  sceneStartedAt: number | null
 }>()
 
 const emit = defineEmits<{
@@ -114,13 +115,74 @@ const sceneKey = computed(
 /* ───────────────────────────────
    VIDEO: Autoplay Setup
 ──────────────────────────────── */
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+function getElapsedSeconds(): number | null {
+  if (props.sceneStartedAt === null) {
+    return null
+  }
+
+  if (props.mode !== "display") {
+    return null
+  }
+
+  const elapsedMs = Date.now() - props.sceneStartedAt
+  if (Number.isFinite(elapsedMs) === false || elapsedMs < 0) {
+    return null
+  }
+
+  return elapsedMs / 1000
+}
+
+function trySyncVideoToServerTime(): void {
+  const el = videoRef.value
+  if (!el) {
+    return
+  }
+
+  const elapsed = getElapsedSeconds()
+  if (elapsed === null) {
+    return
+  }
+
+  // Wenn duration noch nicht bekannt ist, warten wir auf loadedmetadata
+  if (Number.isFinite(el.duration) === false || el.duration <= 0) {
+    return
+  }
+
+  // nicht ganz ans Ende springen, sonst feuert sofort `ended`
+  const target = clampNumber(elapsed, 0, Math.max(0, el.duration - 0.25))
+
+  // Nur setzen, wenn wir wirklich deutlich daneben liegen (verhindert Jitter)
+  if (Number.isFinite(el.currentTime) && Math.abs(el.currentTime - target) < 0.35) {
+    return
+  }
+
+  try {
+    el.currentTime = target
+  } catch {
+    // ignore
+  }
+}
+
 function setupVideo() {
   const el = videoRef.value
   if (!el) {
     return
   }
 
-  el.currentTime = 0
+  // Modal + Control Preview sollen immer bei 0 starten
+  if (props.mode !== "display") {
+    el.currentTime = 0
+  }
+
+  // Display: wenn wir `sceneStartedAt` haben, versuchen wir zum Server-Zeitpunkt zu springen
+  if (props.mode === "display") {
+    trySyncVideoToServerTime()
+  }
+
   el.play().catch(() => {
     // Autoplay kann auf manchen Geräten geblockt werden – dann einfach still ignorieren
   })
@@ -133,8 +195,26 @@ watch(
     if (isVideo.value) {
       nextTick(() => {
         setupVideo()
+        trySyncVideoToServerTime()
       })
     }
+  },
+)
+
+watch(
+  () => props.sceneStartedAt,
+  () => {
+    if (props.mode !== "display") {
+      return
+    }
+
+    if (!isVideo.value) {
+      return
+    }
+
+    nextTick(() => {
+      trySyncVideoToServerTime()
+    })
   },
 )
 
@@ -142,6 +222,7 @@ onMounted(() => {
   pickNextTransition()
   if (isVideo.value) {
     setupVideo()
+    trySyncVideoToServerTime()
   }
 })
 
@@ -164,6 +245,12 @@ function handleEnded() {
 
   if (props.playVideosFullLength) {
     emit("requestNext")
+  }
+}
+
+function handleLoadedMetadata() {
+  if (props.mode === "display") {
+    trySyncVideoToServerTime()
   }
 }
 </script>
@@ -198,6 +285,7 @@ function handleEnded() {
           playsinline
           preload="metadata"
           autoplay
+          @loadedmetadata="handleLoadedMetadata"
           @ended="handleEnded"
         />
 
@@ -245,6 +333,7 @@ function handleEnded() {
             preload="metadata"
             autoplay
             :loop="mode === 'modal-preview'"
+            @loadedmetadata="handleLoadedMetadata"
             @ended="handleEnded"
           />
         </div>

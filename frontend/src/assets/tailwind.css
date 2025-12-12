@@ -650,6 +650,21 @@ body::before {
   transform: scale(1);
 }
 
+.fade-in-enter-active,
+.fade-in-appear-active {
+  transition: opacity 250ms ease;
+}
+
+.fade-in-enter-from,
+.fade-in-appear-from {
+  opacity: 0;
+}
+
+.fade-in-enter-to,
+.fade-in-appear-to {
+  opacity: 1;
+}
+
 /* Slide */
 .scene-slide-enter-from {
   opacity: 0;

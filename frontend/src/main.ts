@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.44" // neue Version setzen
+const APP_VERSION = "0.4.45" // neue Version setzen
 
 let lastTouchEnd = 0
 

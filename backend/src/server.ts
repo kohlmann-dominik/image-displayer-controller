@@ -14,6 +14,23 @@ import {
   Scene as SceneModel,
 } from "./scenes"
 
+type StateUpdateReason =
+  | "manual"
+  | "timer"
+  | "video-ended"
+  | "sync"
+
+type PlayMode = "sequential" | "random"
+
+interface PlayerState {
+  isPlaying: boolean
+  currentSceneId: number | null
+  mode: PlayMode
+  transitionMs: number
+  playVideosFullLength: boolean
+  sceneStartedAt: number | null
+}
+
 const app = express()
 const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
@@ -51,20 +68,25 @@ if (!fs.existsSync(thumbDir)) {
   fs.mkdirSync(thumbDir, { recursive: true })
 }
 
-app.use("/images", express.static(imagesDir))
+app.use(
+  "/images",
+  express.static(imagesDir, {
+    etag: true,
+    lastModified: true,
+    maxAge: "30d",
+    immutable: true,
+    setHeaders: (res, filePath) => {
+      // Thumbnails + optimized aggressiver cachen
+      if (filePath.includes(`${path.sep}thumbnails${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=2592000, immutable")
+      }
 
-// ===================
-// TYPES
-// ===================
-type PlayMode = "sequential" | "random"
-
-interface PlayerState {
-  isPlaying: boolean
-  currentSceneId: number | null
-  mode: PlayMode
-  transitionMs: number
-  playVideosFullLength: boolean
-}
+      if (filePath.includes(`${path.sep}optimized${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=2592000, immutable")
+      }
+    },
+  }),
+)
 
 // ===================
 // HILFSFUNKTIONEN
@@ -73,6 +95,16 @@ interface PlayerState {
 function getThumbnailPath(scene: SceneModel): string {
   const baseName = path.parse(scene.filename).name
   return path.join(thumbDir, `${baseName}.jpg`)
+}
+
+function getOptimizedPath(scene: SceneModel): string {
+  const baseName = path.parse(scene.filename).name
+
+  if (scene.type === "video") {
+    return path.join(imagesDir, "optimized", `${baseName}.mp4`)
+  }
+
+  return path.join(imagesDir, "optimized", `${baseName}.jpg`)
 }
 
 function isRealFile(p: string): boolean {
@@ -120,6 +152,7 @@ let state: PlayerState = {
   mode: "sequential",
   transitionMs: 5000,
   playVideosFullLength: false,
+  sceneStartedAt: scenes.length ? Date.now() : null,
 }
 
 // Hilfsfunktionen für sichtbare Szenen
@@ -172,27 +205,24 @@ function computeNextScene(): SceneModel | null {
 // --- globaler Rotationstimer im Backend ---
 let rotationTimer: NodeJS.Timeout | null = null
 
-function clearRotationTimer() {
+function clearRotationTimer(): void {
   if (rotationTimer !== null) {
     clearTimeout(rotationTimer)
     rotationTimer = null
   }
 }
 
-function scheduleRotation() {
+function scheduleRotation(): void {
   clearRotationTimer()
 
   // Nur laufen, wenn wirklich "Play" aktiv ist
-  if (!state.isPlaying) {
+  if (!state.isPlaying || state.currentSceneId === null) {
     return
   }
 
   // Wenn aktuelle Szene ein Video ist und "volle Länge" aktiv → kein Timer,
   // der Wechsel kommt dann über NEXT_SCENE vom Frontend (onended)
-  const currentScene =
-    state.currentSceneId != null
-      ? scenes.find((s) => s.id === state.currentSceneId) ?? null
-      : null
+  const currentScene = scenes.find((s) => s.id === state.currentSceneId) ?? null
 
   if (
     currentScene !== null &&
@@ -208,7 +238,7 @@ function scheduleRotation() {
   rotationTimer = setTimeout(() => {
     const next = computeNextScene()
     if (next !== null) {
-      setCurrentScene(next.id)
+      setCurrentScene(next.id, "timer")
     }
 
     // danach wieder neu planen, solange isPlaying true ist
@@ -216,10 +246,11 @@ function scheduleRotation() {
   }, ms)
 }
 
-function broadcastState() {
+function broadcastStateWithReason(reason: StateUpdateReason): void {
   const payload = JSON.stringify({
     type: "STATE_UPDATE",
     payload: state,
+    meta: { reason },
   })
 
   wss.clients.forEach((client) => {
@@ -229,10 +260,17 @@ function broadcastState() {
   })
 }
 
-function setCurrentScene(id: number | null) {
-  state = { ...state, currentSceneId: id }
-  broadcastState()
-  // bei jeder Änderung der Szene Timer neu planen
+function setCurrentScene(
+  id: number | null,
+  reason: StateUpdateReason = "manual",
+): void {
+  state = {
+    ...state,
+    currentSceneId: id,
+    sceneStartedAt: id !== null ? Date.now() : null,
+  }
+
+  broadcastStateWithReason(reason)
   scheduleRotation()
 }
 
@@ -241,6 +279,7 @@ wss.on("connection", (ws) => {
     JSON.stringify({
       type: "STATE_UPDATE",
       payload: state,
+      meta: { reason: "sync" },
     }),
   )
 
@@ -251,22 +290,59 @@ wss.on("connection", (ws) => {
 
       switch (msg.type) {
         case "SET_STATE": {
-          state = { ...state, ...(msg.payload || {}) }
-          broadcastState()
+          const prevIsPlaying = state.isPlaying
+          const patch = (msg.payload || {}) as Partial<PlayerState>
+
+          // Wenn ein Client die Szene umstellt, muss sceneStartedAt neu gesetzt werden.
+          if (
+            typeof patch.currentSceneId === "number" ||
+            patch.currentSceneId === null
+          ) {
+            const nextId = patch.currentSceneId
+
+            // Rest-Patch ohne currentSceneId anwenden
+            const { currentSceneId: _ignore, ...rest } = patch
+            state = { ...state, ...rest }
+
+            if (nextId !== state.currentSceneId) {
+              setCurrentScene(nextId, "manual")
+              break
+            }
+
+            // keine Scene-Änderung → optional sceneStartedAt setzen, wenn wir von Pause -> Play wechseln
+            if (prevIsPlaying === false && state.isPlaying === true && state.currentSceneId !== null) {
+              state = { ...state, sceneStartedAt: Date.now() }
+            }
+
+            broadcastStateWithReason("manual")
+            scheduleRotation()
+            break
+          }
+
+          state = { ...state, ...patch }
+
+          // wenn wir von Pause -> Play wechseln, soll die Display-View ab diesem Zeitpunkt synchron starten
+          if (prevIsPlaying === false && state.isPlaying === true && state.currentSceneId !== null) {
+            state = { ...state, sceneStartedAt: Date.now() }
+          }
+
+          broadcastStateWithReason("manual")
           scheduleRotation()
           break
         }
+
         case "SET_SCENE": {
           const sceneId = msg.payload?.sceneId
           if (typeof sceneId === "number") {
-            setCurrentScene(sceneId)
+            setCurrentScene(sceneId, "manual")
           }
           break
         }
+
         case "NEXT_SCENE": {
           const nextScene = computeNextScene()
           if (nextScene !== null) {
-            setCurrentScene(nextScene.id)
+            setCurrentScene(nextScene.id, "video-ended")
           }
           break
         }
@@ -351,7 +427,7 @@ app.post(
         created.push(scene)
 
         if (state.currentSceneId === null) {
-          setCurrentScene(scene.id)
+          setCurrentScene(scene.id, "manual")
         }
 
         console.log("[upload] scene created with id:", scene.id)
@@ -406,9 +482,17 @@ app.delete("/api/scenes/:id", async (req: Request, res: Response) => {
     fs.unlinkSync(thumbPath)
   }
 
+  const optimizedPath = getOptimizedPath(removed)
+  if (isRealFile(optimizedPath)) {
+    fs.unlinkSync(optimizedPath)
+  }
+
   if (scenes.length === 0) {
     state.currentSceneId = null
-    broadcastState()
+    state.sceneStartedAt = null
+    state.isPlaying = false
+    clearRotationTimer()
+    broadcastStateWithReason("manual")
   }
 
   res.json({ ok: true })

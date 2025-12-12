@@ -12,6 +12,7 @@ const state = ref<PlayerState | null>(null)
 const scenes = ref<Scene[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const isWsReady = ref(false)
 
 let unsubscribe: (() => void) | null = null
 
@@ -183,7 +184,13 @@ function preloadNextScene(): void {
 
 // --- WS-STATE ---
 function handleStateUpdate(s: PlayerState): void {
+  const wasNull = state.value === null
   state.value = { ...s }
+
+  if (wasNull) {
+    // erster erfolgreicher State nach Mount/Reconnect → einmal sanft einblenden
+    isWsReady.value = true
+  }
 
   // Falls noch keine Szene gesetzt ist, aber sichtbare Szenen existieren → erste setzen
   if (
@@ -285,13 +292,19 @@ function goBackToControl(): void {
       </button>
     </Transition>
 
-    <div class="w-full h-full flex items-center justify-center">
-      <SceneMedia
-        :scene="currentScene"
-        mode="display"
-        :play-videos-full-length="!!state?.playVideosFullLength"
-        @requestNext="handleRequestNext"
-      />
-    </div>
+    <Transition name="fade-in" appear>
+      <div
+        v-if="isWsReady"
+        class="w-full h-full flex items-center justify-center"
+      >
+        <SceneMedia
+          :scene="currentScene"
+          mode="display"
+          :play-videos-full-length="!!state?.playVideosFullLength"
+          :scene-started-at="state?.sceneStartedAt ?? null"
+          @requestNext="handleRequestNext"
+        />
+      </div>
+    </Transition>
   </div>
 </template>
