@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.48" // neue Version setzen
+const APP_VERSION = "0.4.49" // neue Version setzen
 
 let lastTouchEnd = 0
 
@@ -51,7 +51,7 @@ if (url.searchParams.get("v") !== APP_VERSION) {
       }
     }
 
-    // 🔸 Body-Background je nach Route setzen
+    // Body-Background je nach Route setzen
     const body = document.body
 
     if (isDisplayRoute) {

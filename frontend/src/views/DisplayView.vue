@@ -16,6 +16,18 @@ const isWsReady = ref(false)
 
 let unsubscribe: (() => void) | null = null
 
+let prevHtmlBg = ""
+let prevBodyBg = ""
+let prevBodyColor = ""
+let prevThemeColor = ""
+
+function setThemeColor(color: string) {
+  const el = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null
+  if (el) {
+    el.setAttribute("content", color)
+  }
+}
+
 const visibleScenes = computed(() => {
   return scenes.value.filter((s) => {
     if (s.visible === undefined || s.visible === null) {
@@ -208,6 +220,26 @@ function handleStateUpdate(s: PlayerState): void {
 }
 
 onMounted(() => {
+  // iPadOS-Fix: html + body explizit schwarz setzen
+  const html = document.documentElement
+  const body = document.body
+
+  prevHtmlBg = html.style.backgroundColor
+  prevBodyBg = body.style.backgroundColor
+  prevBodyColor = body.style.color
+
+  const themeMeta = document.querySelector(
+    'meta[name="theme-color"]'
+  ) as HTMLMetaElement | null
+  prevThemeColor = themeMeta?.getAttribute("content") ?? ""
+
+  html.style.backgroundColor = "#000000"
+  body.style.backgroundColor = "#000000"
+  body.style.color = "#ffffff"
+
+  setThemeColor("#000000")
+
+  // bestehende Logik
   connectWs()
   void loadScenes()
   unsubscribe = onStateChange(handleStateUpdate)
@@ -217,6 +249,19 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  // Farben sauber zurücksetzen
+  const html = document.documentElement
+  const body = document.body
+
+  html.style.backgroundColor = prevHtmlBg
+  body.style.backgroundColor = prevBodyBg
+  body.style.color = prevBodyColor
+
+  if (prevThemeColor) {
+    setThemeColor(prevThemeColor)
+  }
+
+  // 🔵 bestehende Cleanup-Logik
   if (unsubscribe) {
     unsubscribe()
   }
@@ -225,7 +270,6 @@ onBeforeUnmount(() => {
     hideBackButtonTimeoutId.value = null
   }
 })
-
 watch(
   () => [state.value?.currentSceneId, state.value?.mode, visibleScenes.value.length],
   () => {
