@@ -1033,6 +1033,7 @@ async function deleteSelectedScenes() {
                   :play-videos-full-length="!!state?.playVideosFullLength"
                   @requestNext="nextScene"
                   class="w-full h-full object-contain"
+                  :scene-started-at="null"
                 />
               </div>
             </div>
