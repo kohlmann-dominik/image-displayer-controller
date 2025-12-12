@@ -8,6 +8,7 @@ const dataFile = path.join(__dirname, "..", "data", "state.json")
 // Default-State, falls noch nichts existiert
 const defaultState: PlayerState = {
   currentSceneId: 1,
+  sceneStartedAt: null,
   isPlaying: true,
   mode: "sequential",
   transitionMs: 5000,
