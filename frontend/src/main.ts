@@ -32,35 +32,62 @@ if (url.searchParams.get("v") !== APP_VERSION) {
 } else {
   const app = createApp(App)
 
-  // 🔹 Dynamische theme-color + body background je nach Route
-  router.afterEach((to) => {
-    const themeMeta = document.querySelector(
-      'meta[name="theme-color"]'
-    ) as HTMLMetaElement | null
+  function setMeta(name: string, content: string) {
+    let tag = document.querySelector(`meta[name="${name}"]`) as
+      | HTMLMetaElement
+      | null
 
-    const isDisplayRoute = to.name === "display" // ggf. anpassen!
-
-    // Navbar / Browser-Leiste einfärben
-    if (themeMeta) {
-      if (isDisplayRoute) {
-        // Display → schwarz
-        themeMeta.setAttribute("content", "#000000")
-      } else {
-        // Rest → dein Blau
-        themeMeta.setAttribute("content", "#287ffd")
-      }
+    if (!tag) {
+      tag = document.createElement("meta")
+      tag.setAttribute("name", name)
+      document.head.appendChild(tag)
     }
 
-    // Body-Background je nach Route setzen
-    const body = document.body
+    tag.setAttribute("content", content)
+  }
 
-    if (isDisplayRoute) {
-      body.style.backgroundColor = "#000000"
-      body.style.color = "#ffffff" // optional, falls nötig
-    } else {
-      // Hier deine Standard-Hintergrundfarbe aus dem CSS
-      body.style.backgroundColor = "#287ffd"
-      body.style.color = "" // zurücksetzen
+function applyRouteChrome(to: any) {
+  const isDisplayRoute = to.name === "display"
+  const isControlRoute = to.name === "control"
+
+  const root = document.documentElement
+
+  if (isDisplayRoute) {
+    root.style.setProperty("--statusbar-bg", "#000000")
+  } else if (isControlRoute) {
+    root.style.setProperty("--statusbar-bg", "#287ffd")
+  }
+
+  // optional weiterhin theme-color (schadet nicht)
+  const theme = isDisplayRoute ? "#000000" : "#287ffd"
+  let themeTag = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null
+  if (!themeTag) {
+    themeTag = document.createElement("meta")
+    themeTag.setAttribute("name", "theme-color")
+    document.head.appendChild(themeTag)
+  }
+  themeTag.setAttribute("content", theme)
+}
+
+  // 🔹 Dynamische theme-color + iOS statusbar je nach Route
+  router.afterEach((to) => {
+    applyRouteChrome(to)
+  })
+
+  // Beim initialen Load sicher anwenden
+  router.isReady().then(() => {
+    applyRouteChrome(router.currentRoute.value)
+  })
+
+  // iOS Back/Forward Cache: häufigster Grund fürs "bleibt schwarz"
+  window.addEventListener("pageshow", () => {
+    applyRouteChrome(router.currentRoute.value)
+  })
+
+  // Wenn App aus dem Hintergrund zurückkommt
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      applyRouteChrome(router.currentRoute.value)
     }
   })
 
