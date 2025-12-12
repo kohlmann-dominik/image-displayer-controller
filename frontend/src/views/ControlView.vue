@@ -589,6 +589,7 @@ async function deleteSelectedScenes() {
                   :play-videos-full-length="!!state?.playVideosFullLength"
                   @requestNext="nextScene"
                   @requestFullscreenDisplay="goToDisplayView"
+                  :scene-started-at="null"
                   class="absolute inset-0 flex items-center justify-center"
                 />
               </Transition>
