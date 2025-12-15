@@ -4,7 +4,7 @@ import "./style.css"
 import App from "./App.vue"
 import { router } from "./router"
 
-const APP_VERSION = "0.4.49" // neue Version setzen
+const APP_VERSION = "0.4.5" // neue Version setzen
 
 let lastTouchEnd = 0
 
@@ -31,20 +31,6 @@ if (url.searchParams.get("v") !== APP_VERSION) {
   // danach nicht weiter initialisieren
 } else {
   const app = createApp(App)
-
-  function setMeta(name: string, content: string) {
-    let tag = document.querySelector(`meta[name="${name}"]`) as
-      | HTMLMetaElement
-      | null
-
-    if (!tag) {
-      tag = document.createElement("meta")
-      tag.setAttribute("name", name)
-      document.head.appendChild(tag)
-    }
-
-    tag.setAttribute("content", content)
-  }
 
 function applyRouteChrome(to: any) {
   const isDisplayRoute = to.name === "display"
