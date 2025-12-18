@@ -238,12 +238,12 @@ onBeforeUnmount(() => {
    - In Display/Preview: bei "volle Länge" → nächste Szene
 ──────────────────────────────── */
 function handleEnded() {
-  // Im Modal läuft das Video per loop-Attribut endlos, kein Next
   if (props.mode === "modal-preview") {
     return
   }
 
-    emit("requestNext")
+  // In display + control-preview immer weiter
+  emit("requestNext")
 }
 
 function handleLoadedMetadata() {

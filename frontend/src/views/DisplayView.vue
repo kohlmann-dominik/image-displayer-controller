@@ -289,6 +289,14 @@ function goBackToControl(): void {
 </script>
 
 <template>
+  <div class="absolute top-2 left-2 z-[9999] text-xs text-white/80 bg-black/60 px-2 py-1 rounded">
+  wsState: {{ state ? 'ok' : 'null' }} |
+  scenes: {{ scenes.length }} |
+  visible: {{ visibleScenes.length }} |
+  currentId: {{ state?.currentSceneId ?? 'null' }} |
+  currentScene: {{ currentScene ? currentScene.id : 'null' }}
+</div>
+
   <div
     class="fixed inset-0 bg-black flex items-center justify-center overflow-hidden"
     @click="handleTap"

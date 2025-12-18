@@ -1,8 +1,19 @@
 // src/config.ts
+const isProd = import.meta.env.PROD
 
-// Robust für Prod + PWA + mehrere Devices:
-// alles über nginx / gleiche Origin (Port 80/443), inkl. WebSocket-Upgrade via /ws.
-export const API_BASE = ""
+let apiBase: string
+let wsUrl: string
 
-const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:"
-export const WS_URL = `${wsProto}//${window.location.host}/ws`
+if (isProd) {
+  // PROD → alles über nginx
+  apiBase = ""
+  wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`
+} else {
+  // DEV → direktes Backend
+  const host = window.location.hostname
+  apiBase = `http://${host}:4000`
+  wsUrl = `ws://${host}:4000/ws`
+}
+
+export const API_BASE = apiBase
+export const WS_URL = wsUrl
