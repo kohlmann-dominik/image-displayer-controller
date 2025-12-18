@@ -243,9 +243,7 @@ function handleEnded() {
     return
   }
 
-  if (props.playVideosFullLength) {
     emit("requestNext")
-  }
 }
 
 function handleLoadedMetadata() {

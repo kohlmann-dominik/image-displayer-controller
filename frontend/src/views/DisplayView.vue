@@ -338,10 +338,11 @@ function goBackToControl(): void {
 
     <Transition name="fade-in" appear>
       <div
-        v-if="currentScene"
         class="w-full h-full flex items-center justify-center"
       >
         <SceneMedia
+          v-if="currentScene"
+          :key="`${currentScene.id}-${state?.sceneStartedAt ?? 0}`"
           :scene="currentScene"
           mode="display"
           :play-videos-full-length="!!state?.playVideosFullLength"
