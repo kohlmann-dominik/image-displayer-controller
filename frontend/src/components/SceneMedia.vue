@@ -99,10 +99,17 @@ function pickNextTransition() {
     return
   }
 
+  // ✅ Videos: keine Transform-Transitions (Safari black-frame Bug)
+  if (isVideo.value) {
+    currentTransition.value = "scene-fade"
+    return
+  }
+
   const next =
     availableTransitions[Math.floor(Math.random() * availableTransitions.length)]
   currentTransition.value = next ?? "scene-fade"
 }
+
 
 const transitionName = computed(() =>
   props.mode === "display" ? currentTransition.value : "scene-fade",
