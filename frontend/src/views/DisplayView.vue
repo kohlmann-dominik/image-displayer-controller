@@ -344,6 +344,7 @@ function goBackToControl(): void {
           v-if="currentScene"
           :key="`${currentScene.id}-${state?.sceneStartedAt ?? 0}`"
           :scene="currentScene"
+          :is-playing="!!state?.isPlaying"
           mode="display"
           :play-videos-full-length="!!state?.playVideosFullLength"
           :scene-started-at="state?.sceneStartedAt ?? null"

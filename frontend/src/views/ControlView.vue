@@ -586,6 +586,7 @@ async function deleteSelectedScenes() {
                   :key="currentScene.id"
                   :scene="currentScene"
                   mode="control-preview"
+                  :is-playing="!!state?.isPlaying"
                   :play-videos-full-length="!!state?.playVideosFullLength"
                   @requestNext="nextScene"
                   @requestFullscreenDisplay="goToDisplayView"
@@ -1032,6 +1033,7 @@ async function deleteSelectedScenes() {
                   mode="modal-preview"
                   :play-videos-full-length="!!state?.playVideosFullLength"
                   @requestNext="nextScene"
+                  :is-playing="true"
                   class="w-full h-full object-contain"
                   :scene-started-at="null"
                 />

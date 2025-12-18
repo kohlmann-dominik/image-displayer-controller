@@ -8,6 +8,7 @@ const props = defineProps<{
   mode: "control-preview" | "modal-preview" | "display"
   playVideosFullLength: boolean
   sceneStartedAt: number | null
+  isPlaying: boolean
 }>()
 
 const emit = defineEmits<{
@@ -244,13 +245,20 @@ onBeforeUnmount(() => {
    - Im Modal: nix tun (loop)
    - In Display/Preview: bei "volle Länge" → nächste Szene
 ──────────────────────────────── */
-function handleEnded() {
+function handleEnded(): void {
   if (props.mode === "modal-preview") {
     return
   }
 
-  // In display + control-preview immer weiter
-  emit("requestNext")
+  // ✅ Pause respektieren
+  if (props.isPlaying === false) {
+    return
+  }
+
+  // ✅ Nur bei "volle Länge" selber weiter schalten
+  if (props.playVideosFullLength) {
+    emit("requestNext")
+  }
 }
 
 function handleLoadedMetadata() {
@@ -258,6 +266,25 @@ function handleLoadedMetadata() {
     trySyncVideoToServerTime()
   }
 }
+
+watch(
+  () => props.isPlaying,
+  (playing) => {
+    const el = videoRef.value
+    if (!el) {
+      return
+    }
+
+    if (playing) {
+      el.play().catch(() => {
+        // ignore autoplay restrictions
+      })
+    } else {
+      el.pause()
+    }
+  },
+)
+
 </script>
 
 <template>
