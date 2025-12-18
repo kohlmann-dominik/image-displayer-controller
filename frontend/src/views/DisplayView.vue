@@ -338,7 +338,7 @@ function goBackToControl(): void {
 
     <Transition name="fade-in" appear>
       <div
-        v-if="isWsReady"
+        v-if="currentScene"
         class="w-full h-full flex items-center justify-center"
       >
         <SceneMedia
