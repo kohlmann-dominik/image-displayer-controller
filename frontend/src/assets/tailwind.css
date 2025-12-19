@@ -641,7 +641,6 @@ body::before {
 .scene-fade-fast-enter-from,
 .scene-fade-fast-leave-to {
   opacity: 0;
-  transform: scale(0.99);
 }
 
 .scene-fade-fast-enter-to,
