@@ -260,15 +260,10 @@ export async function addSceneFromFilename(filename: string): Promise<Scene> {
   const type = detectTypeFromFilename(filename)
   const fullPath = path.join(imagesDir, filename)
 
+  // Thumbnail ja (schnell genug / nötig fürs Grid)
   const thumbnailUrl = await generateThumbnail(fullPath, type === "video")
 
-  let optimizedUrl: string | null = null
-  if (type === "video") {
-    optimizedUrl = await ensureOptimizedVideo(fullPath)
-  } else {
-    optimizedUrl = await ensureOptimizedImage(fullPath)
-  }
-
+  // OptimizedUrl NICHT hier erzeugen (sonst blockt Upload ewig)
   const scene: Scene = {
     id: getNextId(),
     filename,
@@ -277,13 +272,11 @@ export async function addSceneFromFilename(filename: string): Promise<Scene> {
     type,
     visible: true,
     thumbnailUrl: thumbnailUrl ?? undefined,
-    optimizedUrl: optimizedUrl ?? undefined,
+    optimizedUrl: undefined,
   }
-
 
   scenes.push(scene)
   saveScenesToFile(scenes)
-
   return scene
 }
 
