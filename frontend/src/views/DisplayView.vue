@@ -342,7 +342,7 @@ function goBackToControl(): void {
       >
         <SceneMedia
           v-if="currentScene"
-          :key="`${currentScene.id}-${state?.sceneStartedAt ?? 0}`"
+          :key="currentScene.id"
           :scene="currentScene"
           :is-playing="!!state?.isPlaying"
           mode="display"
