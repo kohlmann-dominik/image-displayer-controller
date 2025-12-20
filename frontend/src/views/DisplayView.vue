@@ -335,22 +335,18 @@ function goBackToControl(): void {
         </svg>
       </button>
     </Transition>
-
-    <Transition name="fade-in" appear>
-      <div
-        class="w-full h-full flex items-center justify-center"
-      >
-        <SceneMedia
-          v-if="currentScene"
-          :key="currentScene.id"
-          :scene="currentScene"
-          :is-playing="!!state?.isPlaying"
-          mode="display"
-          :play-videos-full-length="!!state?.playVideosFullLength"
-          :scene-started-at="state?.sceneStartedAt ?? null"
-          @requestNext="handleRequestNext"
-        />
-      </div>
+ 
+    <Transition name="scene-fade" mode="out-in">
+      <SceneMedia
+        v-if="currentScene"
+        :key="currentScene.id"
+        :scene="currentScene"
+        :is-playing="!!state?.isPlaying"
+        mode="display"
+        :play-videos-full-length="!!state?.playVideosFullLength"
+        :scene-started-at="state?.sceneStartedAt ?? null"
+        @requestNext="handleRequestNext"
+      />
     </Transition>
   </div>
 </template>
