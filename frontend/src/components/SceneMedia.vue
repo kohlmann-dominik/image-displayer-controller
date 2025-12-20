@@ -124,9 +124,7 @@ const transitionName = computed(() =>
   props.mode === "display" ? currentTransition.value : "scene-fade",
 )
 
-const sceneKey = computed(
-  () => `${props.scene?.id ?? "empty"}-${transitionName.value}`,
-)
+const sceneKey = computed(() => `${props.scene?.id ?? "empty"}`)
 
 /* ───────────────────────────────
    VIDEO: Autoplay Setup
@@ -297,25 +295,6 @@ function handleLoadedMetadata() {
     trySyncVideoToServerTime()
   }
 }
-
-watch(
-  () => props.isPlaying,
-  (playing) => {
-    const el = videoRef.value
-    if (!el) {
-      return
-    }
-
-    if (playing) {
-      el.play().catch(() => {
-        // ignore autoplay restrictions
-      })
-    } else {
-      el.pause()
-    }
-  },
-)
-
 </script>
 
 <template>
