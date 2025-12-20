@@ -14,6 +14,10 @@ import {
   Scene as SceneModel,
 } from "./scenes"
 
+import { generateThumbnail } from "./thumbnails"
+import { ensureOptimizedVideo, ensureOptimizedImage } from "./optimizedMedia"
+
+
 type StateUpdateReason =
   | "manual"
   | "timer"
@@ -424,7 +428,38 @@ app.post(
           }
         }
 
+        const fullPath = path.join(imagesDir, scene.filename)
+
+        // Thumbnail sofort erzeugen, falls fehlt
+        if (!scene.thumbnailUrl) {
+          const thumb = await generateThumbnail(fullPath, scene.type === "video")
+          if (thumb) {
+            const updated = updateScene(scene.id, { thumbnailUrl: thumb })
+            if (updated) {
+              scene = updated
+            }
+          }
+        }
+
         created.push(scene)
+
+        setImmediate(async () => {
+          try {
+            // Optimized nachziehen (falls fehlt)
+            if (!scene.optimizedUrl) {
+              const optimized =
+                scene.type === "video"
+                  ? await ensureOptimizedVideo(fullPath)
+                  : await ensureOptimizedImage(fullPath)
+
+              if (optimized) {
+                updateScene(scene.id, { optimizedUrl: optimized })
+              }
+            }
+          } catch (err) {
+            console.error("[media] background optimized failed:", err)
+          }
+        })
 
         if (state.currentSceneId === null) {
           setCurrentScene(scene.id, "manual")
